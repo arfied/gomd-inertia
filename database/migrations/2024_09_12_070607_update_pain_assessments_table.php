@@ -1,0 +1,38 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::table('pain_assessments', function (Blueprint $table) {
+            $table->string('pain_location')->nullable()->change();
+            $table->string('pain_relief')->nullable()->change();
+            $table->string('pain_duration')->nullable()->change();
+            $table->date('pain_start')->nullable()->change();
+            $table->string('pain_frequency')->nullable()->change();
+            $table->string('pain_triggers')->nullable()->change();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::table('pain_assessments', function (Blueprint $table) {
+            $table->string('pain_location')->nullable(false)->change();
+            $table->string('pain_relief')->nullable(false)->change();
+            $table->string('pain_duration')->nullable(false)->change();
+            $table->date('pain_start')->nullable(false)->change();
+            $table->string('pain_frequency')->nullable(false)->change();
+            $table->string('pain_triggers')->nullable(false)->change();
+        });
+    }
+};
