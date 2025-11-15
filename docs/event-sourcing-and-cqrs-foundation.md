@@ -192,3 +192,20 @@ This flow is intentionally minimal and does not yet mutate existing
 Eloquent models. It provides a clear, testable template for implementing
 other commands and events (e.g. order creation, payment processing,
 commission calculation) in later iterations.
+
+
+## Bridging to the existing User model
+
+The application layer provides a small service to bridge the existing `User` Eloquent model
+into the event-sourced patient domain:
+
+- **`App\Application\Patient\PatientEnrollmentService`**
+  - Depends on the in-memory `CommandBus`.
+  - Exposes a single method `enroll(User $user, array $metadata = []): void`.
+  - Internally creates an `EnrollPatient` command with a freshly generated patient UUID
+    and the given user's ID, then dispatches it through the `CommandBus`.
+
+This allows controllers, jobs, or existing onboarding flows to start emitting
+`PatientEnrolled` events for real users without changing the underlying `users`
+table or existing models. Over time, additional projectors can consume these
+patient events to build dedicated patient read models or dashboards.
