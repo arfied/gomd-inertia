@@ -209,3 +209,22 @@ This allows controllers, jobs, or existing onboarding flows to start emitting
 `PatientEnrolled` events for real users without changing the underlying `users`
 table or existing models. Over time, additional projectors can consume these
 patient events to build dedicated patient read models or dashboards.
+
+
+## Automatic patient enrollment on user registration
+
+To connect the CQRS-based patient enrollment flow to a real application flow,
+newly registered users are automatically enrolled as patients.
+
+- Laravel fires `Illuminate\Auth\Events\Registered` whenever a user is
+  created via the standard registration flow.
+- A listener, `App\Listeners\EnrollRegisteredUserAsPatient`, handles this
+  event and delegates to `PatientEnrollmentService`.
+- The listener calls `enroll($user, ['source' => 'registration'])`, which
+  dispatches an `EnrollPatient` command and ultimately stores a
+  `PatientEnrolled` event in the event store.
+
+This integration relies on Laravel 11's **automatic event discovery**: placing
+`EnrollRegisteredUserAsPatient` in the `app/Listeners` directory with a
+`handle(Registered $event)` method is enough for it to be discovered and
+executed, so no manual registration in `bootstrap/app.php` is required.
