@@ -149,3 +149,46 @@ These patterns will be wired into concrete features (patient
 enrollment, order creation, commission calculation, etc.) in subsequent
 iterations.
 
+
+## Example: Patient Enrollment CQRS Flow
+
+The first concrete feature built on top of this foundation is a minimal
+patient enrollment flow that demonstrates the full path from command to
+stored event.
+
+### New Components
+
+- **Domain Event**: `App\\Domain\\Patient\\Events\\PatientEnrolled`
+  - `aggregate_type`: `patient`
+  - `event_type`: `patient.enrolled`
+  - Payload: `['user_id' => int]` plus optional metadata.
+- **Command DTO**: `App\\Application\\Patient\\Commands\\EnrollPatient`
+  - Carries `patientUuid`, `userId`, and optional `metadata`.
+  - Intentionally contains only primitive data and no behavior.
+- **Command Handler**: `App\\Application\\Patient\\Handlers\\EnrollPatientHandler`
+  - Validates that it received an `EnrollPatient` command.
+  - Instantiates a `PatientEnrolled` event from the command data.
+  - Persists the event via `App\\Services\\EventStore`.
+- **Wiring**: `App\\Providers\\AppServiceProvider`
+  - Registers `EventStore`, `CommandBus`, and `QueryBus` as singletons.
+  - In `boot()`, hooks into the container's `resolving` callback for
+    `CommandBus` to register the mapping:
+    - `EnrollPatient` → `EnrollPatientHandler`.
+
+### Usage Pattern (High Level)
+
+1. Application code (e.g. a controller, job, or saga) constructs an
+   `EnrollPatient` command with the relevant data.
+2. It resolves `CommandBus` from the container and calls
+   `dispatch($command)`.
+3. The `CommandBus` routes the command to `EnrollPatientHandler`.
+4. The handler creates and stores a `PatientEnrolled` event via the
+   `EventStore`.
+5. Downstream components (listeners, projections, analytics) can
+   subscribe to `patient.enrolled` events and build read models or
+   trigger side effects, as described in `TELEMED_PRO_SPECIFICATION.md`.
+
+This flow is intentionally minimal and does not yet mutate existing
+Eloquent models. It provides a clear, testable template for implementing
+other commands and events (e.g. order creation, payment processing,
+commission calculation) in later iterations.
