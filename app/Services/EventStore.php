@@ -5,7 +5,7 @@ namespace App\Services;
 use App\Domain\Events\DomainEvent;
 use App\Models\StoredEvent;
 
-class EventStore
+class EventStore implements EventStoreContract
 {
     /**
      * Persist a domain event and return the stored record.
