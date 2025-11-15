@@ -8,6 +8,7 @@ use App\Domain\Events\DomainEvent;
 use App\Domain\Patient\Events\PatientEnrolled;
 use App\Domain\Shared\Commands\Command;
 use App\Services\EventStoreContract;
+use Illuminate\Contracts\Events\Dispatcher;
 use InvalidArgumentException;
 
 /**
@@ -21,6 +22,7 @@ class EnrollPatientHandler implements CommandHandler
 {
     public function __construct(
         private EventStoreContract $eventStore,
+        private Dispatcher $events,
     ) {
     }
 
@@ -39,6 +41,8 @@ class EnrollPatientHandler implements CommandHandler
         );
 
         $this->eventStore->store($event);
+
+        $this->events->dispatch($event);
     }
 }
 
