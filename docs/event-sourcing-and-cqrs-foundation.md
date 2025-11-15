@@ -250,7 +250,7 @@ simple read model:
   - `App\Application\Patient\Handlers\EnrollPatientHandler` now **both**:
     - stores a `PatientEnrolled` domain event via the `EventStore`, and
     - dispatches that `PatientEnrolled` instance via Laravel's event bus
-      (using `event($event)`).
+      so in-process listeners and projectors can react immediately.
   - This allows in-process projectors to react to the domain event immediately,
     while the persisted event remains the system of record.
 - **Projector (listener)**: `App\Listeners\ProjectPatientEnrollment`
@@ -269,3 +269,41 @@ queries" model:
 2. Those domain events are dispatched through Laravel's event bus.
 3. Lightweight projectors update denormalized read models (like
    `patient_enrollments`) suited for dashboards and API queries.
+
+
+
+## Patient enrollment queries
+
+Once the `patient_enrollments` read model is in place, the query side of CQRS can expose
+simple query objects and handlers to fetch enrollment information for use in controllers,
+API endpoints, or background jobs.
+
+- **Query DTO**: `App\Application\Patient\Queries\GetPatientEnrollmentByUserId`
+  - Implements the `App\Domain\Shared\Queries\Query` marker interface.
+  - Carries a single scalar: `public int $userId`.
+  - Represents the question: *"Is this user enrolled as a patient, and if so, what is
+    their patient UUID and metadata?"*
+- **Query Handler**: `App\Application\Patient\Queries\GetPatientEnrollmentByUserIdHandler`
+  - Implements `App\Application\Queries\QueryHandler`.
+  - Depends on a small read-side abstraction,
+    `App\Application\Patient\PatientEnrollmentFinder`, to look up data in the
+    `patient_enrollments` table.
+  - Returns either a `App\Models\PatientEnrollment` instance or `null` if the user is
+    not currently enrolled.
+- **Finder abstraction**: `App\Application\Patient\PatientEnrollmentFinder`
+  - Encapsulates the read-model access behind an interface so query handlers can be unit
+    tested without touching the database.
+  - Default implementation `App\Application\Patient\EloquentPatientEnrollmentFinder`
+    uses the `PatientEnrollment` Eloquent model to query by `user_id`.
+- **QueryBus wiring**:
+  - In `App\Providers\AppServiceProvider::boot()`, the `QueryBus` is configured to
+    route `GetPatientEnrollmentByUserId` to `GetPatientEnrollmentByUserIdHandler`.
+  - Application code can resolve `QueryBus` from the container and call:
+
+    - `$result = $queryBus->ask(new GetPatientEnrollmentByUserId($userId));`
+
+      where `$result` is either a `PatientEnrollment` model or `null`.
+
+This pattern keeps the **write model** (commands and events) and the **read model**
+(queries and projections) cleanly separated, while still being lightweight and
+framework-friendly for a cPanel deployment.
