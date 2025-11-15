@@ -313,7 +313,7 @@ framework-friendly for a cPanel deployment.
 ## End-to-end patient enrollment flow (test)
 
 To verify the entire write + read pipeline for patient enrollment, there is a feature test
-`tests/Feature/PatientEnrollmentEndToEndTest.php` that:
+`tests/Feature/PatientEnrollmentFlowTest.php` that:
 
 1. Creates a real `User` via the model factory.
 2. Fires Laravel's `Illuminate\Auth\Events\Registered` event for that user.
