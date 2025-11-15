@@ -18,6 +18,9 @@ Route::get('dashboard', function () {
 Route::middleware('auth')->group(function () {
     Route::get('patient/enrollment', [PatientEnrollmentController::class, 'show'])
         ->name('patient.enrollment.show');
+
+    Route::post('patient/enrollment', [PatientEnrollmentController::class, 'store'])
+        ->name('patient.enrollment.store');
 });
 
 require __DIR__.'/settings.php';

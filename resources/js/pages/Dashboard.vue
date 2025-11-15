@@ -5,7 +5,10 @@ import { dashboard } from '@/routes';
 import { type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/vue3';
 import PlaceholderPattern from '../components/PlaceholderPattern.vue';
-import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
+
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -25,6 +28,8 @@ interface PatientEnrollment {
 const enrollment = ref<PatientEnrollment | null>(null);
 const loadingEnrollment = ref(true);
 const enrollmentError = ref<string | null>(null);
+const startingEnrollment = ref(false);
+
 
 const formattedEnrolledAt = computed(() => {
     if (!enrollment.value?.enrolled_at) {
@@ -33,6 +38,62 @@ const formattedEnrolledAt = computed(() => {
 
     return new Date(enrollment.value.enrolled_at).toLocaleString();
 });
+
+function getXsrfToken(): string | null {
+    const name = 'XSRF-TOKEN';
+
+    const cookies = document.cookie.split(';');
+
+    for (const cookie of cookies) {
+        const [key, value] = cookie.split('=');
+
+        if (key && key.trim() === name) {
+            return decodeURIComponent(value ?? '');
+        }
+    }
+
+    return null;
+}
+
+async function startEnrollment() {
+    if (startingEnrollment.value || loadingEnrollment.value) {
+        return;
+    }
+
+    startingEnrollment.value = true;
+    enrollmentError.value = null;
+
+    try {
+        const xsrfToken = getXsrfToken();
+
+        const response = await fetch('/patient/enrollment', {
+            method: 'POST',
+            headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/json',
+                ...(xsrfToken ? { 'X-XSRF-TOKEN': xsrfToken } : {}),
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify({}),
+        });
+
+        if (!response.ok) {
+            enrollmentError.value = 'Failed to start enrollment (' + response.status + ')';
+            return;
+        }
+
+        const data = (await response.json()) as {
+            enrollment: PatientEnrollment | null;
+        };
+
+        enrollment.value = data.enrollment ?? null;
+    } catch {
+        enrollmentError.value =
+            'A network error occurred while starting your enrollment.';
+    } finally {
+        startingEnrollment.value = false;
+    }
+}
 
 onMounted(async () => {
     try {
@@ -94,6 +155,28 @@ onMounted(async () => {
                             </span>
                         </CardDescription>
                     </CardHeader>
+                    <CardFooter
+                        v-if="!loadingEnrollment && !enrollmentError && !enrollment"
+                        class="pt-0"
+                    >
+                        <Button
+                            type="button"
+                            size="sm"
+                            :disabled="startingEnrollment"
+                            @click="startEnrollment"
+                        >
+                            <Spinner
+                                v-if="startingEnrollment"
+                                class="mr-2 h-4 w-4"
+                            />
+                            <span v-if="startingEnrollment">
+                                Starting enrollment…
+                            </span>
+                            <span v-else>
+                                Start enrollment
+                            </span>
+                        </Button>
+                    </CardFooter>
                 </Card>
 
                 <div
@@ -108,7 +191,7 @@ onMounted(async () => {
                 </div>
             </div>
             <div
-                class="relative min-h-[100vh] flex-1 rounded-xl border border-sidebar-border/70 md:min-h-min dark:border-sidebar-border"
+                class="relative min-h-screen flex-1 rounded-xl border border-sidebar-border/70 md:min-h-min dark:border-sidebar-border"
             >
                 <PlaceholderPattern />
             </div>
