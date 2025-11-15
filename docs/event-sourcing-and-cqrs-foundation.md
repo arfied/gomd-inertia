@@ -326,7 +326,7 @@ framework-friendly for a cPanel deployment.
 ## Patient enrollment HTTP endpoint (current user)
 
 To surface the patient enrollment read model to the front-end (or external clients), the
-query layer is wrapped in a small JSON endpoint.
+query layer is wrapped in small JSON endpoints.
 
 - **Route**: `GET /patient/enrollment`
   - Defined in `routes/web.php`.
@@ -350,22 +350,41 @@ query layer is wrapped in a small JSON endpoint.
     }
     ```
 
-This keeps the controller thin: it deals with HTTP + authentication, while the query
-handler and finder continue to own read-model concerns.
+- **Route**: `POST /patient/enrollment`
+  - Also defined in `routes/web.php`, in the same `auth` middleware group.
+  - Thin "start enrollment" action for the current user.
+  - Behaviour:
+    - If no enrollment exists yet for the authenticated user, it dispatches the existing
+      `EnrollPatient` command via `PatientEnrollmentService` with `source = "manual"`
+      and then returns the persisted enrollment (HTTP 201 Created).
+    - If the user is already enrolled, it does **not** create a new aggregate; it simply
+      returns the existing enrollment (HTTP 200 OK), making the endpoint effectively
+      idempotent for callers.
+  - **Controller**: `App\\Http\\Controllers\\PatientEnrollmentController@store`
+    - Uses the `QueryBus` + `GetPatientEnrollmentByUserId` to check for an existing
+      enrollment before calling `PatientEnrollmentService`.
+
+This keeps the controller layer thin: it deals with HTTP + authentication, while the
+query handlers, finder, and application service continue to own domain and read-model
+concerns.
 
 ### Dashboard UI integration (Inertia)
 
-On the Dashboard page (`resources/js/pages/Dashboard.vue`), this endpoint is surfaced as
-a small "Patient enrollment" card:
+On the Dashboard page (`resources/js/pages/Dashboard.vue`), these endpoints are surfaced
+as a small "Patient enrollment" card:
 
 - On mount (client-side only), the Vue component issues a `GET /patient/enrollment`
   request and reads the `enrollment` property from the JSON response.
 - While loading, the card shows a simple "Loading enrollment status…" message.
-- If no enrollment exists for the current user, it shows a "not yet enrolled" message.
+- If no enrollment exists for the current user, it shows a "not yet enrolled" message
+  and a "Start enrollment" button.
+- When the "Start enrollment" button is clicked, the component issues a `POST
+  /patient/enrollment` request; on success, the card updates to show the new enrollment.
 - If an enrollment exists, it shows the enrollment source and `enrolled_at` timestamp.
 
-This keeps the Dashboard UI thin and read-only: it delegates all domain logic to the
-existing query handler and finder, and simply renders the current enrollment state.
+This keeps the Dashboard UI thin: it delegates all domain logic to the existing
+command/query handlers and finder, and simply renders and manipulates the current
+enrollment state.
 
 
 ## End-to-end patient enrollment flow (test)
