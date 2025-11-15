@@ -64,7 +64,10 @@ test('user can delete their account', function () {
         ->assertRedirect(route('home'));
 
     $this->assertGuest();
-    expect($user->fresh())->toBeNull();
+
+    // In this application, "deleting" an account marks the user as deleted
+    // instead of physically removing the row for audit / compliance reasons.
+    expect(optional($user->fresh())->status)->toBe('deleted');
 });
 
 test('correct password must be provided to delete account', function () {

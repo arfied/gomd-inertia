@@ -11,6 +11,8 @@ use App\Application\Patient\PatientEnrollmentFinder;
 use App\Application\Patient\PatientEnrollmentProjector;
 use App\Application\Patient\Queries\GetPatientEnrollmentByUserId;
 use App\Application\Patient\Queries\GetPatientEnrollmentByUserIdHandler;
+use App\Application\Patient\Queries\GetPatientEnrollmentByPatientUuid;
+use App\Application\Patient\Queries\GetPatientEnrollmentByPatientUuidHandler;
 use App\Application\Queries\QueryBus;
 use App\Services\EventStore;
 use App\Services\EventStoreContract;
@@ -49,6 +51,11 @@ class AppServiceProvider extends ServiceProvider
             $bus->register(
                 GetPatientEnrollmentByUserId::class,
                 $app->make(GetPatientEnrollmentByUserIdHandler::class)
+            );
+
+            $bus->register(
+                GetPatientEnrollmentByPatientUuid::class,
+                $app->make(GetPatientEnrollmentByPatientUuidHandler::class)
             );
         });
     }

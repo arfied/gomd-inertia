@@ -1,11 +1,11 @@
 <?php
 
 use App\Application\Patient\PatientEnrollmentFinder;
-use App\Application\Patient\Queries\GetPatientEnrollmentByUserId;
-use App\Application\Patient\Queries\GetPatientEnrollmentByUserIdHandler;
+use App\Application\Patient\Queries\GetPatientEnrollmentByPatientUuid;
+use App\Application\Patient\Queries\GetPatientEnrollmentByPatientUuidHandler;
 use App\Models\PatientEnrollment;
 
-it('returns a patient enrollment for a user when one exists', function () {
+it('returns a patient enrollment for a patient UUID when one exists', function () {
     $expected = new PatientEnrollment();
     $expected->patient_uuid = 'patient-uuid-123';
     $expected->user_id = 42;
@@ -17,25 +17,25 @@ it('returns a patient enrollment for a user when one exists', function () {
 
         public function findByUserId(int $userId): ?PatientEnrollment
         {
-            return $this->result;
+            return null; // not used in this test
         }
 
         public function findByPatientUuid(string $patientUuid): ?PatientEnrollment
         {
-            return null; // not used in this test
+            return $this->result;
         }
     };
 
-    $handler = new GetPatientEnrollmentByUserIdHandler($finder);
+    $handler = new GetPatientEnrollmentByPatientUuidHandler($finder);
 
-    $query = new GetPatientEnrollmentByUserId(userId: 42);
+    $query = new GetPatientEnrollmentByPatientUuid(patientUuid: 'patient-uuid-123');
 
     $result = $handler->handle($query);
 
     expect($result)->toBe($expected);
 });
 
-it('returns null when no enrollment exists for the given user', function () {
+it('returns null when no enrollment exists for the given patient UUID', function () {
     $finder = new class(null) implements PatientEnrollmentFinder {
         public function __construct(private ?PatientEnrollment $result)
         {
@@ -43,18 +43,18 @@ it('returns null when no enrollment exists for the given user', function () {
 
         public function findByUserId(int $userId): ?PatientEnrollment
         {
-            return $this->result;
+            return null; // not used in this test
         }
 
         public function findByPatientUuid(string $patientUuid): ?PatientEnrollment
         {
-            return null; // not used in this test
+            return $this->result;
         }
     };
 
-    $handler = new GetPatientEnrollmentByUserIdHandler($finder);
+    $handler = new GetPatientEnrollmentByPatientUuidHandler($finder);
 
-    $query = new GetPatientEnrollmentByUserId(userId: 999);
+    $query = new GetPatientEnrollmentByPatientUuid(patientUuid: 'non-existent-uuid');
 
     $result = $handler->handle($query);
 

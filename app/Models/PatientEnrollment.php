@@ -11,6 +11,11 @@ class PatientEnrollment extends Model
 
     protected $table = 'patient_enrollments';
 
+    /**
+     * This read model does not use Laravel's created_at / updated_at timestamps.
+     */
+    public $timestamps = false;
+
     protected $fillable = [
         'patient_uuid',
         'user_id',

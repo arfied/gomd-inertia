@@ -10,5 +10,10 @@ class EloquentPatientEnrollmentFinder implements PatientEnrollmentFinder
     {
         return PatientEnrollment::where('user_id', $userId)->first();
     }
+
+    public function findByPatientUuid(string $patientUuid): ?PatientEnrollment
+    {
+        return PatientEnrollment::where('patient_uuid', $patientUuid)->first();
+    }
 }
 
