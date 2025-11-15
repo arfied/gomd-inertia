@@ -228,3 +228,44 @@ This integration relies on Laravel 11's **automatic event discovery**: placing
 `EnrollRegisteredUserAsPatient` in the `app/Listeners` directory with a
 `handle(Registered $event)` method is enough for it to be discovered and
 executed, so no manual registration in `bootstrap/app.php` is required.
+
+
+## Patient enrollment read model / projection
+
+To support fast querying of which users are enrolled as patients, we introduce a
+simple read model:
+
+- **Migration**: `database/migrations/2025_11_15_010000_create_patient_enrollments_table.php`
+  - Table: `patient_enrollments`
+  - Columns:
+    - `id` (BIGINT, auto-increment)
+    - `patient_uuid` (UUID, unique)
+    - `user_id` (unsigned BIGINT, foreign key to `users.id`)
+    - `source` (string, nullable)
+    - `enrolled_at` (timestamp)
+    - `metadata` (JSON, nullable)
+- **Model**: `App\Models\PatientEnrollment`
+  - Casts `metadata` to array.
+- **Event publication**:
+  - `App\Application\Patient\Handlers\EnrollPatientHandler` now **both**:
+    - stores a `PatientEnrolled` domain event via the `EventStore`, and
+    - dispatches that `PatientEnrolled` instance via Laravel's event bus
+      (using `event($event)`).
+  - This allows in-process projectors to react to the domain event immediately,
+    while the persisted event remains the system of record.
+- **Projector (listener)**: `App\Listeners\ProjectPatientEnrollment`
+  - Handle signature: `handle(PatientEnrolled $event): void`.
+  - Delegates to an application-layer projector service,
+    `App\Application\Patient\PatientEnrollmentProjector`.
+  - The default implementation,
+    `App\Application\Patient\EloquentPatientEnrollmentProjector`, uses
+    `PatientEnrollment::updateOrCreate(...)` to upsert the read model by
+    `patient_uuid`.
+
+This pattern demonstrates the "event-store as source of truth + projections for
+queries" model:
+
+1. Commands append domain events to the `event_store` table.
+2. Those domain events are dispatched through Laravel's event bus.
+3. Lightweight projectors update denormalized read models (like
+   `patient_enrollments`) suited for dashboards and API queries.
