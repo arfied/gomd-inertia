@@ -307,3 +307,21 @@ API endpoints, or background jobs.
 This pattern keeps the **write model** (commands and events) and the **read model**
 (queries and projections) cleanly separated, while still being lightweight and
 framework-friendly for a cPanel deployment.
+
+
+
+## End-to-end patient enrollment flow (test)
+
+To verify the entire write + read pipeline for patient enrollment, there is a feature test
+`tests/Feature/PatientEnrollmentEndToEndTest.php` that:
+
+1. Creates a real `User` via the model factory.
+2. Fires Laravel's `Illuminate\Auth\Events\Registered` event for that user.
+3. Asserts that a `patient.enrolled` domain event has been stored in the `event_store` table.
+4. Asserts that a `patient_enrollments` row has been projected for that user.
+5. Uses the `QueryBus` with `GetPatientEnrollmentByUserId` to read the enrollment back.
+
+The test uses `RefreshDatabase` so migrations run on the test connection (`sqlite` in-memory by
+default via `phpunit.xml`). On environments where the `pdo_sqlite` extension is not available, the
+test marks itself as skipped instead of failing; on a properly configured test environment, it runs
+as a true end-to-end check of the registration → command → event store → projection → query flow.
