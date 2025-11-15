@@ -278,26 +278,39 @@ Once the `patient_enrollments` read model is in place, the query side of CQRS ca
 simple query objects and handlers to fetch enrollment information for use in controllers,
 API endpoints, or background jobs.
 
-- **Query DTO**: `App\Application\Patient\Queries\GetPatientEnrollmentByUserId`
-  - Implements the `App\Domain\Shared\Queries\Query` marker interface.
-  - Carries a single scalar: `public int $userId`.
-  - Represents the question: *"Is this user enrolled as a patient, and if so, what is
-    their patient UUID and metadata?"*
-- **Query Handler**: `App\Application\Patient\Queries\GetPatientEnrollmentByUserIdHandler`
-  - Implements `App\Application\Queries\QueryHandler`.
-  - Depends on a small read-side abstraction,
-    `App\Application\Patient\PatientEnrollmentFinder`, to look up data in the
-    `patient_enrollments` table.
-  - Returns either a `App\Models\PatientEnrollment` instance or `null` if the user is
-    not currently enrolled.
+- **Query DTOs**:
+  - `App\Application\Patient\Queries\GetPatientEnrollmentByUserId`
+    - Implements the `App\Domain\Shared\Queries\Query` marker interface.
+    - Carries a single scalar: `public int $userId`.
+    - Represents the question: *"Is this user enrolled as a patient, and if so, what is
+      their patient UUID and metadata?"*
+  - `App\Application\Patient\Queries\GetPatientEnrollmentByPatientUuid`
+    - Also implements the `Query` marker interface.
+    - Carries `public string $patientUuid`.
+    - Represents the question: *"Given a patient aggregate UUID, what is the enrollment
+      record (if any)?"*
+- **Query Handlers**:
+  - `App\Application\Patient\Queries\GetPatientEnrollmentByUserIdHandler`
+    - Implements `App\Application\Queries\QueryHandler`.
+    - Depends on a small read-side abstraction,
+      `App\Application\Patient\PatientEnrollmentFinder`, to look up data in the
+      `patient_enrollments` table by `user_id`.
+    - Returns either a `App\Models\PatientEnrollment` instance or `null` if the user is
+      not currently enrolled.
+  - `App\Application\Patient\Queries\GetPatientEnrollmentByPatientUuidHandler`
+    - Also implements `QueryHandler` and uses the same finder abstraction to query by
+      `patient_uuid` instead.
 - **Finder abstraction**: `App\Application\Patient\PatientEnrollmentFinder`
   - Encapsulates the read-model access behind an interface so query handlers can be unit
     tested without touching the database.
   - Default implementation `App\Application\Patient\EloquentPatientEnrollmentFinder`
-    uses the `PatientEnrollment` Eloquent model to query by `user_id`.
+    uses the `PatientEnrollment` Eloquent model and exposes dedicated methods for
+    lookups by `user_id` and by `patient_uuid`.
 - **QueryBus wiring**:
   - In `App\Providers\AppServiceProvider::boot()`, the `QueryBus` is configured to
-    route `GetPatientEnrollmentByUserId` to `GetPatientEnrollmentByUserIdHandler`.
+    route:
+    - `GetPatientEnrollmentByUserId` to `GetPatientEnrollmentByUserIdHandler`.
+    - `GetPatientEnrollmentByPatientUuid` to `GetPatientEnrollmentByPatientUuidHandler`.
   - Application code can resolve `QueryBus` from the container and call:
 
     - `$result = $queryBus->ask(new GetPatientEnrollmentByUserId($userId));`
@@ -308,6 +321,51 @@ This pattern keeps the **write model** (commands and events) and the **read mode
 (queries and projections) cleanly separated, while still being lightweight and
 framework-friendly for a cPanel deployment.
 
+
+
+## Patient enrollment HTTP endpoint (current user)
+
+To surface the patient enrollment read model to the front-end (or external clients), the
+query layer is wrapped in a small JSON endpoint.
+
+- **Route**: `GET /patient/enrollment`
+  - Defined in `routes/web.php`.
+  - Protected by the `auth` middleware; unauthenticated clients receive an HTTP 401
+    Unauthorized status when not authenticated (standard JSON API behavior).
+- **Controller**: `App\\Http\\Controllers\\PatientEnrollmentController@show`
+  - Resolves the currently authenticated user from the HTTP request.
+  - Uses the `App\\Application\\Queries\\QueryBus` with
+    `GetPatientEnrollmentByUserId` to load the enrollment for `user_id`.
+  - Returns a JSON document of the form:
+
+    ```json
+    {
+      "enrollment": null | {
+        "patient_uuid": "...",
+        "user_id": 123,
+        "source": "registration" | "manual" | "...",
+        "metadata": { "...": "..." },
+        "enrolled_at": "2024-09-01T12:34:56.000000Z"
+      }
+    }
+    ```
+
+This keeps the controller thin: it deals with HTTP + authentication, while the query
+handler and finder continue to own read-model concerns.
+
+### Dashboard UI integration (Inertia)
+
+On the Dashboard page (`resources/js/pages/Dashboard.vue`), this endpoint is surfaced as
+a small "Patient enrollment" card:
+
+- On mount (client-side only), the Vue component issues a `GET /patient/enrollment`
+  request and reads the `enrollment` property from the JSON response.
+- While loading, the card shows a simple "Loading enrollment status…" message.
+- If no enrollment exists for the current user, it shows a "not yet enrolled" message.
+- If an enrollment exists, it shows the enrollment source and `enrolled_at` timestamp.
+
+This keeps the Dashboard UI thin and read-only: it delegates all domain logic to the
+existing query handler and finder, and simply renders the current enrollment state.
 
 
 ## End-to-end patient enrollment flow (test)
