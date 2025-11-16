@@ -283,19 +283,19 @@ protected function schedule(Schedule $schedule)
 - **VueUse** for composable utilities
 
 #### **UI Component Library**
-- **PrimeVue 4+** - Comprehensive enterprise-grade UI component library
-  - Rich set of 90+ components (DataTable, Tree, Chart, Calendar, etc.)
-  - Built-in themes and customization
-  - Accessibility (WCAG) compliant
+- **Headless/Tailwind-based UI components** for enterprise-grade interfaces
+  - Rich set of components (data table, tree, chart, calendar, etc.)
+  - Theming and customization via Tailwind + design tokens
+  - Accessibility (WCAG) compliant patterns
   - Form components with validation
-  - Advanced data components (DataTable, TreeTable, Timeline)
-  - Overlay components (Dialog, Sidebar, Toast)
+  - Advanced data components (tables, timelines)
+  - Overlay components (dialogs, sidebars, toasts)
   - File upload with progress tracking
   - Charts integration
 
 #### **Additional UI Libraries**
-- **PrimeIcons** - Icon library that pairs with PrimeVue
-- **Tailwind CSS 4+** for utility-first styling alongside PrimeVue
+- **Icon library** (e.g. Lucide) for consistent UI icons
+- **Tailwind CSS 4+** for utility-first styling
 - **VueFlow** for visual workflow and network diagrams
 - **Auto-animate** for smooth transitions
 
@@ -303,7 +303,7 @@ protected function schedule(Schedule $schedule)
 - **VeeValidate 4** for form validation
 - **Zod** for schema validation (shared with backend)
 - **Inertia Form Helpers** for optimistic UI updates
-- **PrimeVue Form Components** - InputText, Dropdown, Calendar, FileUpload, etc.
+- **UI form components** - Text inputs, dropdowns, calendars, file uploads, etc.
 
 #### **Real-Time Features (Reverb + Fallbacks, cPanel Compatible)**
 - **Primary:** Laravel Reverb (WebSockets) for real-time updates
@@ -427,9 +427,8 @@ export default defineConfig({
         rollupOptions: {
             output: {
                 manualChunks: {
-                    'vendor': ['vue', '@inertiajs/vue3', 'pinia'],
-                    'primevue': ['primevue/config', 'primevue/datatable', 'primevue/dialog'],
-                    'charts': ['primevue/chart'],
+                    vendor: ['vue', '@inertiajs/vue3', 'pinia'],
+                    ui: ['@/components/ui'],
                 }
             }
         }
@@ -622,7 +621,7 @@ interface PatientCard {
 }
 ```
 
-**PrimeVue Components Used:**
+**UI components used (example):**
 - `DataTable` - Patient list with sorting, filtering, pagination
 - `Timeline` - Event stream visualization
 - `Card` - Patient information cards
@@ -658,7 +657,7 @@ interface MedicationSearch {
 }
 ```
 
-**PrimeVue Components Used:**
+**UI components used (example):**
 - `AutoComplete` - Natural language medication search
 - `DataTable` - Medication results with advanced filtering
 - `Stepper` - Multi-step order wizard
@@ -693,7 +692,7 @@ OrderValidated → OrderSubmitted → [OrderFulfillmentSaga begins]
 - Projected earnings based on pipeline
 - Commission breakdown by product type
 
-**PrimeVue Components Used:**
+**UI components used (example):**
 - `Chart` - Earnings trends, forecasts, breakdowns
 - `Knob` - Circular progress indicators for goals
 - `ProgressBar` - Monthly targets
@@ -768,7 +767,7 @@ interface PresenceState {
 const { data: presence } = usePolling(`/api/patients/${patientId}/presence`, 5000)
 ```
 
-**PrimeVue Components Used:**
+**UI components used (example):**
 - `AvatarGroup` - Show active users viewing patient
 - `Editor` - Rich text editor for clinical notes
 - `Mention` - @mention team members in notes
@@ -848,7 +847,7 @@ interface DunningStrategy {
 }
 ```
 
-**PrimeVue Components Used:**
+**UI components used (example):**
 - `DataTable` - Subscription list with status
 - `Tag` - Subscription status (active, past_due, cancelled)
 - `Timeline` - Payment attempt history
@@ -902,7 +901,7 @@ interface ConditionalLogic {
 }
 ```
 
-**PrimeVue Components Used:**
+**UI components used (example):**
 - `InputText` - Text questions
 - `InputNumber` - Numeric questions
 - `Dropdown` / `MultiSelect` - Selection questions
@@ -955,7 +954,7 @@ interface HealthRiskAssessment {
 }
 ```
 
-**PrimeVue Components Used:**
+**UI components used (example):**
 - `Knob` - Overall health score visualization
 - `Chart` - Risk trends over time (Line, Radar charts)
 - `ProgressBar` - Category scores
@@ -1013,8 +1012,8 @@ interface Message {
 }
 ```
 
-**PrimeVue Components Used:**
-- `Chat` - Conversation interface (custom component using PrimeVue primitives)
+**UI components used (example):**
+- `Chat` - Conversation interface (custom component using UI primitives)
 - `InputText` - Message input
 - `Button` - Send, attach files
 - `FileUpload` - Attachment handling
@@ -1065,7 +1064,7 @@ OrderShipped →
 - Downline performance
 - Leaderboard rankings
 
-**PrimeVue Components Used:**
+**UI components used (example):**
 - `Chart` - All chart types (Line, Bar, Pie, Doughnut, Radar, Polar Area)
 - `DataTable` - Detailed data with export to CSV/Excel
 - `Card` - Metric cards with icons
@@ -1136,7 +1135,7 @@ interface AuditEvent {
 }
 ```
 
-**PrimeVue Components Used:**
+**UI components used (example):**
 - `DataTable` - Audit log with advanced filtering
 - `Timeline` - Chronological audit trail
 - `Tag` - Compliance flags
@@ -1198,29 +1197,31 @@ interface ConsentRecord {
 
 ---
 
-## User Interface Design with PrimeVue
+## User Interface Design (example)
 
 ### Design System
 
-**PrimeVue Theme Configuration:**
+**UI Theme Configuration (example):**
 ```typescript
-// app.ts - PrimeVue setup with custom theme
-import PrimeVue from 'primevue/config'
-import Aura from '@primevue/themes/aura'
+// app.ts - UI library setup with custom theme
+import { createApp } from 'vue'
+import App from './App.vue'
+import { createDesignSystem } from '@/ui/design-system'
 
-app.use(PrimeVue, {
-    theme: {
-        preset: Aura,
-        options: {
-            prefix: 'p',
-            darkModeSelector: '.dark-mode',
-            cssLayer: {
-                name: 'primevue',
-                order: 'tailwind-base, primevue, tailwind-utilities'
-            }
-        }
-    }
-})
+const app = createApp(App)
+
+app.use(
+    createDesignSystem({
+        prefix: 'ui',
+        darkModeSelector: '.dark',
+        cssLayer: {
+            name: 'ui',
+            order: 'tailwind-base, ui, tailwind-utilities',
+        },
+    }),
+)
+
+app.mount('#app')
 ```
 
 **Custom Theme Tokens:**
@@ -1259,9 +1260,9 @@ const customPreset = {
 
 **Spacing System:**
 - Based on 4px grid: 4, 8, 12, 16, 20, 24, 32, 40, 48, 64, 80, 96
-- PrimeVue spacing utilities align with Tailwind
+- Spacing utilities align with Tailwind
 
-### Page Layouts with PrimeVue
+### Page Layouts (example)
 
 **1. Patient Dashboard Layout**
 
@@ -1679,7 +1680,7 @@ const customPreset = {
 - Set up repository patterns
 - Build aggregate roots for core domains
 - **Install and configure Inertia.js 2+**
-- **Install and configure PrimeVue 4+ with custom theme**
+- **Install and configure frontend UI components and theme**
 - **Set up TypeScript, Pinia, VueUse**
 - **Create base layouts and shared components**
 
@@ -1688,44 +1689,44 @@ const customPreset = {
 **Week 5-6: Patient Management**
 - Patient aggregate with event sourcing
 - Patient enrollment saga
-- Patient dashboard with Reverb WebSocket updates (SSE fallback) (PrimeVue DataTable, Timeline, Card)
-- Document management with events (PrimeVue FileUpload)
+- Patient dashboard with Reverb WebSocket updates (SSE fallback) using data tables, timelines, and cards
+- Document management with events (file upload UI)
 - Medical history tracking
 
 **Week 7-8: Order Management**
 - Order aggregate and fulfillment saga
 - Medication catalog with MySQL full-text search
 - Condition-medication relationships
-- Order wizard with AI assistance (PrimeVue Stepper, AutoComplete)
+- Order wizard with AI assistance (stepper and auto-complete UI)
 - Inventory management events
 
 **Week 9-10: Commission System**
 - Commission calculation engine
 - Hierarchical commission cascade
-- Real-time commission dashboard (PrimeVue Chart, OrganizationChart)
+- Real-time commission dashboard (charts and organization charts)
 - Payout processing saga
 - Commission audit trail
 
 ### Phase 3: Advanced Features (Weeks 11-16)
 
 **Week 11-12: Payment & Subscriptions**
-- Payment method management (PrimeVue Dialog, InputText)
+- Payment method management (modal dialogs and input components)
 - Subscription renewal automation
 - Dunning management saga
 - Payment failure prediction
-- Revenue analytics (PrimeVue Chart)
+- Revenue analytics (charts)
 
 **Week 13-14: Referral Network**
 - Agent/LOA onboarding saga
 - Referral link generation
-- Network visualization (PrimeVue OrganizationChart, Tree)
+- Network visualization (organization charts and trees)
 - Performance tracking
-- Gamification system (PrimeVue Badge, Tag)
+- Gamification system (badges and tags)
 
 **Week 15-16: Clinical Intelligence**
-- Medical questionnaire engine (PrimeVue dynamic forms)
+- Medical questionnaire engine (dynamic forms)
 - Adaptive form logic
-- Health risk scoring (PrimeVue Knob, Chart)
+- Health risk scoring (gauges/knobs and charts)
 - Medication adherence tracking
 - Predictive interventions
 
@@ -1736,28 +1737,28 @@ const customPreset = {
 - Configure WebSocket broadcasting and authentication
 - Implement SSE fallback endpoints for environments/browsers without WebSocket support
 - Optimistic UI updates with Inertia 2+
-- Polling fallback for presence (PrimeVue AvatarGroup)
+- Polling fallback for presence (avatar group UI)
 
 **Week 19-20: Omnichannel Communication**
-- Unified conversation thread (PrimeVue Timeline, Chat components)
+- Unified conversation thread (timeline and chat components)
 - SMS/Email integration (Twilio/SendGrid)
 - Smart channel routing
-- Notification preferences (PrimeVue Toast)
+- Notification preferences (toast notifications)
 - Communication analytics
 
 ### Phase 5: Analytics & Compliance (Weeks 21-24)
 
 **Week 21-22: Analytics Engine**
-- Real-time dashboards (PrimeVue Chart - all types)
+- Real-time dashboards (charts - all types)
 - Event-based metrics
 - Predictive analytics
-- Custom report builder (PrimeVue DataTable with export)
+- Custom report builder (data table with export)
 - Data export functionality
 
 **Week 23-24: Compliance Automation**
-- Audit trail implementation (PrimeVue DataTable, Timeline)
+- Audit trail implementation (data table and timeline)
 - HIPAA compliance checks
-- Consent management (PrimeVue FileUpload, Checkbox)
+- Consent management (file uploads and checkboxes)
 - License verification
 - Regulatory reporting
 
@@ -1900,12 +1901,12 @@ npm run build
 # Laravel will automatically use these in production
 ```
 
-**PrimeVue Tree Shaking:**
+**UI Library Tree Shaking (example):**
 ```javascript
 // Only import components you use
-import DataTable from 'primevue/datatable'
-import Column from 'primevue/column'
-import Button from 'primevue/button'
+import { DataTable } from 'your-ui-library'
+import { Column } from 'your-ui-library'
+import { Button } from 'your-ui-library'
 
 // Instead of importing entire library
 ```
@@ -2008,8 +2009,7 @@ if ($this->app->environment('production')) {
 - **TypeScript 5+**
 - **Inertia.js 2+** with enhanced features
 - **Pinia** for state management
-- **PrimeVue 4+** - Enterprise UI component library
-- **PrimeIcons** - Icon library
+- **Headless/Tailwind-based UI components** for enterprise-ready UIs
 - **Tailwind CSS 4+** for utility styling
 - **VueUse** for composables
 - **VueFlow** for network diagrams
@@ -2038,7 +2038,7 @@ if ($this->app->environment('production')) {
 
 ---
 
-## PrimeVue Component Mapping
+## UI Component Mapping (example)
 
 ### Data Display
 - **DataTable** - Patient lists, orders, commissions, audit logs
@@ -2090,6 +2090,6 @@ if ($this->app->environment('production')) {
 
 ---
 
-This architecture creates a truly event-driven, intelligent telemedicine platform optimized for cPanel hosting with modern Inertia.js 2+ and enterprise-grade PrimeVue components, while maintaining scalability, complete audit trails, predictive insights, and automated workflows. Every action in the system is an event, every event tells a story, and every story drives better healthcare outcomes—all running efficiently on affordable shared hosting infrastructure with a beautiful, accessible, and professional user interface.
+This architecture creates a truly event-driven, intelligent telemedicine platform optimized for cPanel hosting with modern Inertia.js 2+ and a modern component library, while maintaining scalability, complete audit trails, predictive insights, and automated workflows. Every action in the system is an event, every event tells a story, and every story drives better healthcare outcomes—all running efficiently on affordable shared hosting infrastructure with a beautiful, accessible, and professional user interface.
 
 
