@@ -441,7 +441,9 @@ Next to the enrollment card, the dashboard renders:
       ]
   - The endpoint accepts an optional `filter` query parameter:
     - `filter=enrollment` &rarr; return only `patient.enrolled` events for the
-      patients aggregate.
+      patient's aggregate.
+    - `filter=other` &rarr; return all events for the aggregate except
+      `patient.enrolled` events.
     - Omitted or any other value &rarr; no additional filtering is applied and
       all events for the aggregate are returned (up to the default limit).
 
@@ -451,9 +453,9 @@ Next to the enrollment card, the dashboard renders:
 - On mount, the Dashboard component issues a `GET /patient/events/timeline` request
   to populate this timeline panel, with loading, empty, and error states mirroring the
   recent activity card.
-- The panel groups events by calendar day and exposes a simple filter between
-  showing all events and only enrollment-related events (more categories can be
-  added as additional event types are projected).
+- The panel groups events by calendar day and exposes simple filters between
+  showing all events, only enrollment-related events, or other events (more
+  categories can be added as additional event types are projected).
 
 This keeps the Dashboard UI thin: it delegates domain logic to the existing command and
 query handlers for the enrollment and recent activity cards, while the surrounding
