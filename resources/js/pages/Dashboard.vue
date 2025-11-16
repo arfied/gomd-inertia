@@ -264,12 +264,23 @@ async function loadRecentActivity() {
 
 async function loadTimeline() {
     try {
-        const response = await fetch('/patient/events/timeline', {
-            headers: {
-                Accept: 'application/json',
+        const params = new URLSearchParams();
+
+        if (selectedTimelineFilter.value === 'enrollment') {
+            params.set('filter', 'enrollment');
+        }
+
+        const queryString = params.toString();
+
+        const response = await fetch(
+            '/patient/events/timeline' + (queryString ? `?${queryString}` : ''),
+            {
+                headers: {
+                    Accept: 'application/json',
+                },
+                credentials: 'same-origin',
             },
-            credentials: 'same-origin',
-        });
+        );
 
         if (!response.ok) {
             timelineError.value = `Failed to load events timeline (${response.status})`;
@@ -289,10 +300,17 @@ async function loadTimeline() {
     }
 }
 
+async function reloadTimelineForCurrentFilter() {
+    loadingTimeline.value = true;
+    timelineError.value = null;
+
+    await loadTimeline();
+}
+
 onMounted(() => {
     void loadEnrollment();
     void loadRecentActivity();
-    void loadTimeline();
+    void reloadTimelineForCurrentFilter();
 });
 </script>
 
@@ -465,7 +483,7 @@ onMounted(() => {
                                         :class="selectedTimelineFilter === 'all'
                                             ? 'bg-primary text-primary-foreground'
                                             : 'text-foreground'"
-                                        @click="selectedTimelineFilter = 'all'"
+                                        @click="selectedTimelineFilter = 'all'; reloadTimelineForCurrentFilter()"
                                     >
                                         All
                                     </button>
@@ -475,7 +493,7 @@ onMounted(() => {
                                         :class="selectedTimelineFilter === 'enrollment'
                                             ? 'bg-primary text-primary-foreground'
                                             : 'text-foreground'"
-                                        @click="selectedTimelineFilter = 'enrollment'"
+                                        @click="selectedTimelineFilter = 'enrollment'; reloadTimelineForCurrentFilter()"
                                     >
                                         Enrollment
                                     </button>

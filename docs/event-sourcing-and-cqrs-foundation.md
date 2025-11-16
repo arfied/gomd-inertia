@@ -439,6 +439,12 @@ Next to the enrollment card, the dashboard renders:
           "occurred_at": "2024-09-01T12:34:56.000000Z"
         }
       ]
+  - The endpoint accepts an optional `filter` query parameter:
+    - `filter=enrollment` &rarr; return only `patient.enrolled` events for the
+      patients aggregate.
+    - Omitted or any other value &rarr; no additional filtering is applied and
+      all events for the aggregate are returned (up to the default limit).
+
     }
     ```
 
