@@ -4,15 +4,21 @@ namespace App\Providers;
 
 use App\Application\Commands\CommandBus;
 use App\Application\Patient\Commands\EnrollPatient;
+use App\Application\Patient\EloquentPatientActivityFinder;
+use App\Application\Patient\EloquentPatientActivityProjector;
 use App\Application\Patient\EloquentPatientEnrollmentFinder;
 use App\Application\Patient\EloquentPatientEnrollmentProjector;
 use App\Application\Patient\Handlers\EnrollPatientHandler;
+use App\Application\Patient\PatientActivityFinder;
+use App\Application\Patient\PatientActivityProjector;
 use App\Application\Patient\PatientEnrollmentFinder;
 use App\Application\Patient\PatientEnrollmentProjector;
 use App\Application\Patient\Queries\GetPatientEnrollmentByUserId;
 use App\Application\Patient\Queries\GetPatientEnrollmentByUserIdHandler;
 use App\Application\Patient\Queries\GetPatientEnrollmentByPatientUuid;
 use App\Application\Patient\Queries\GetPatientEnrollmentByPatientUuidHandler;
+use App\Application\Patient\Queries\GetRecentPatientActivityByUserId;
+use App\Application\Patient\Queries\GetRecentPatientActivityByUserIdHandler;
 use App\Application\Queries\QueryBus;
 use App\Services\EventStore;
 use App\Services\EventStoreContract;
@@ -33,6 +39,9 @@ class AppServiceProvider extends ServiceProvider
 
         $this->app->bind(PatientEnrollmentProjector::class, EloquentPatientEnrollmentProjector::class);
         $this->app->bind(PatientEnrollmentFinder::class, EloquentPatientEnrollmentFinder::class);
+
+        $this->app->bind(PatientActivityProjector::class, EloquentPatientActivityProjector::class);
+        $this->app->bind(PatientActivityFinder::class, EloquentPatientActivityFinder::class);
     }
 
     /**
@@ -56,6 +65,11 @@ class AppServiceProvider extends ServiceProvider
             $bus->register(
                 GetPatientEnrollmentByPatientUuid::class,
                 $app->make(GetPatientEnrollmentByPatientUuidHandler::class)
+            );
+
+            $bus->register(
+                GetRecentPatientActivityByUserId::class,
+                $app->make(GetRecentPatientActivityByUserIdHandler::class)
             );
         });
     }
