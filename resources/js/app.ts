@@ -4,9 +4,6 @@ import { createInertiaApp } from '@inertiajs/vue3';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import type { DefineComponent } from 'vue';
 import { createApp, h } from 'vue';
-import PrimeVue from 'primevue/config';
-import Aura from '@primevue/themes/aura';
-import 'primeicons/primeicons.css';
 import { initializeTheme } from './composables/useAppearance';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
@@ -23,19 +20,8 @@ createInertiaApp({
 
         app.use(plugin);
 
-        app.use(PrimeVue, {
-            theme: {
-                preset: Aura,
-                options: {
-                    prefix: 'p',
-                    darkModeSelector: '.dark',
-                    cssLayer: {
-                        name: 'primevue',
-                        order: 'tailwind-base, primevue, tailwind-utilities',
-                    },
-                },
-            },
-        });
+        // PrimeVue integration removed for now; we will add it back when the
+        // PrimeVue-based dashboard layout is reintroduced.
 
         app.mount(el);
     },

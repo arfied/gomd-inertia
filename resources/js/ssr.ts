@@ -3,8 +3,6 @@ import createServer from '@inertiajs/vue3/server';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createSSRApp, DefineComponent, h } from 'vue';
 import { renderToString } from 'vue/server-renderer';
-import PrimeVue from 'primevue/config';
-import Aura from '@primevue/themes/aura';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
@@ -24,19 +22,9 @@ createServer(
 
                 app.use(plugin);
 
-                app.use(PrimeVue, {
-                    theme: {
-                        preset: Aura,
-                        options: {
-                            prefix: 'p',
-                            darkModeSelector: '.dark',
-                            cssLayer: {
-                                name: 'primevue',
-                                order: 'tailwind-base, primevue, tailwind-utilities',
-                            },
-                        },
-                    },
-                });
+                // PrimeVue integration removed for now; we will add it back on
+                // the server side when the PrimeVue-based dashboard layout is
+                // reintroduced.
 
                 return app;
             },

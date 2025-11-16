@@ -5,9 +5,10 @@ import { dashboard } from '@/routes';
 import { type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/vue3';
 import PlaceholderPattern from '../components/PlaceholderPattern.vue';
-import Card from 'primevue/card';
-import Button from 'primevue/button';
-import ProgressSpinner from 'primevue/progressspinner';
+import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
+
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -122,6 +123,8 @@ onMounted(async () => {
 });
 </script>
 
+
+
 <template>
     <Head title="Dashboard" />
 
@@ -131,58 +134,51 @@ onMounted(async () => {
         >
             <div class="grid auto-rows-min gap-4 md:grid-cols-3">
                 <Card>
-                    <template #title>
-                        Patient enrollment
-                    </template>
-
-                    <template #content>
-                        <p v-if="loadingEnrollment">
-                            Loading enrollment status...
-                        </p>
-                        <p v-else-if="enrollmentError" class="text-red-600">
-                            {{ enrollmentError }}
-                        </p>
-                        <p v-else-if="enrollment && formattedEnrolledAt">
-                            Enrolled as patient since
-                            {{ formattedEnrolledAt }} (source:
-                            {{ enrollment.source }}).
-                        </p>
-                        <p v-else-if="enrollment">
-                            Enrolled as patient (source:
-                            {{ enrollment.source }}).
-                        </p>
-                        <p v-else>
-                            You are not yet enrolled as a patient.
-                        </p>
-                    </template>
-
-                    <template #footer>
-                        <div
-                            v-if="!loadingEnrollment && !enrollmentError && !enrollment"
-                            class="flex justify-end pt-2"
+                    <CardHeader>
+                        <CardTitle>Patient enrollment</CardTitle>
+                        <CardDescription>
+                            <span v-if="loadingEnrollment">
+                                Loading enrollment status...
+                            </span>
+                            <span v-else-if="enrollmentError">
+                                {{ enrollmentError }}
+                            </span>
+                            <span v-else-if="enrollment && formattedEnrolledAt">
+                                Enrolled as patient since
+                                {{ formattedEnrolledAt }} (source:
+                                {{ enrollment.source }}).
+                            </span>
+                            <span v-else-if="enrollment">
+                                Enrolled as patient (source:
+                                {{ enrollment.source }}).
+                            </span>
+                            <span v-else>
+                                You are not yet enrolled as a patient.
+                            </span>
+                        </CardDescription>
+                    </CardHeader>
+                    <CardFooter
+                        v-if="!loadingEnrollment && !enrollmentError && !enrollment"
+                        class="pt-0"
+                    >
+                        <Button
+                            type="button"
+                            size="sm"
+                            :disabled="startingEnrollment"
+                            @click="startEnrollment"
                         >
-                            <Button
-                                type="button"
-                                size="small"
-                                :disabled="startingEnrollment"
-                                @click="startEnrollment"
-                            >
-                                <ProgressSpinner
-                                    v-if="startingEnrollment"
-                                    style="width: 1rem; height: 1rem"
-                                    strokeWidth="8"
-                                    animationDuration="1s"
-                                    class="mr-2"
-                                />
-                                <span v-if="startingEnrollment">
-                                    Starting enrollment…
-                                </span>
-                                <span v-else>
-                                    Start enrollment
-                                </span>
-                            </Button>
-                        </div>
-                    </template>
+                            <Spinner
+                                v-if="startingEnrollment"
+                                class="mr-2 h-4 w-4"
+                            />
+                            <span v-if="startingEnrollment">
+                                Starting enrollment…
+                            </span>
+                            <span v-else>
+                                Start enrollment
+                            </span>
+                        </Button>
+                    </CardFooter>
                 </Card>
 
                 <div
