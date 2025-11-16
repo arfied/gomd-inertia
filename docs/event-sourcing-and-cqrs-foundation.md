@@ -371,7 +371,8 @@ concerns.
 ### Dashboard UI integration (Inertia)
 
 On the Dashboard page (`resources/js/pages/Dashboard.vue`), these endpoints are surfaced
-as a small "Patient enrollment" card:
+as a small "Patient enrollment" card, with additional contextual cards that gradually
+become event-driven as more projections are added.
 
 - On mount (client-side only), the Vue component issues a `GET /patient/enrollment`
   request and reads the `enrollment` property from the JSON response.
@@ -382,9 +383,41 @@ as a small "Patient enrollment" card:
   /patient/enrollment` request; on success, the card updates to show the new enrollment.
 - If an enrollment exists, it shows the enrollment source and `enrolled_at` timestamp.
 
-This keeps the Dashboard UI thin: it delegates all domain logic to the existing
-command/query handlers and finder, and simply renders and manipulates the current
-enrollment state.
+Next to the enrollment card, the dashboard renders:
+
+- A **"Next steps"** card that explains how the dashboard will evolve (static content).
+- A **"Recent activity"** card that is backed by a read model built on the existing
+  `Activity` table and a dedicated endpoint:
+  - **Query**: `App\\Application\\Patient\\Queries\\GetRecentPatientActivityByUserId`
+  - **Handler**: `GetRecentPatientActivityByUserIdHandler`
+  - **Finder**: `PatientActivityFinder` (implemented by `EloquentPatientActivityFinder`)
+  - **HTTP route**: `GET /patient/activity/recent`
+  - **Controller**: `App\\Http\\Controllers\\PatientActivityController@index`
+  - The controller uses the `QueryBus` with `GetRecentPatientActivityByUserId` and
+    returns a JSON document of the form:
+
+    ```json
+    {
+      "activities": [
+        {
+          "id": 1,
+          "type": "patient.enrolled",
+          "description": "Patient enrolled",
+          "metadata": { "patient_uuid": "..." },
+          "created_at": "2024-09-01T12:34:56.000000Z"
+        }
+      ]
+    }
+    ```
+
+- On mount, the Dashboard component issues a `GET /patient/activity/recent` request and
+  populates a small "Recent activity" list in the UI, with loading and error states.
+- A larger placeholder panel remains reserved for a future **patient events timeline**
+  that will visualise a richer slice of the event stream.
+
+This keeps the Dashboard UI thin: it delegates domain logic to the existing command and
+query handlers for the enrollment and recent activity cards, while the surrounding
+panels remain either static scaffolding or future targets for additional projections.
 
 
 ## End-to-end patient enrollment flow (test)
