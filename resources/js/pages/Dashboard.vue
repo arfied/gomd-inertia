@@ -47,6 +47,64 @@ const timelineEvents = ref<TimelineEventEntry[]>([]);
 const loadingTimeline = ref(true);
 const timelineError = ref<string | null>(null);
 
+const selectedTimelineFilter = ref<'all' | 'enrollment'>('all');
+
+const filteredTimelineEvents = computed(() => {
+    if (selectedTimelineFilter.value === 'all') {
+        return timelineEvents.value;
+    }
+
+    return timelineEvents.value.filter(
+        (event) => event.event_type === 'patient.enrolled',
+    );
+});
+
+interface TimelineEventGroup {
+    date: string;
+    label: string;
+    events: TimelineEventEntry[];
+}
+
+const groupedTimelineEvents = computed<TimelineEventGroup[]>(() => {
+    const groups = new Map<string, TimelineEventGroup>();
+
+    for (const event of filteredTimelineEvents.value) {
+        const isoString = event.occurred_at;
+        let dateKey = 'unknown';
+        let label = 'Unknown date';
+
+        if (isoString) {
+            const date = new Date(isoString);
+
+            if (!Number.isNaN(date.getTime())) {
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+
+                dateKey = `${year}-${month}-${day}`;
+                label = date.toLocaleDateString();
+            }
+        }
+
+        let group = groups.get(dateKey);
+
+        if (!group) {
+            group = {
+                date: dateKey,
+                label,
+                events: [],
+            };
+
+            groups.set(dateKey, group);
+        }
+
+        group.events.push(event);
+    }
+
+    return Array.from(groups.values());
+});
+
+
 
 const enrollment = ref<PatientEnrollment | null>(null);
 const loadingEnrollment = ref(true);
@@ -387,37 +445,93 @@ onMounted(() => {
                             No events yet. As your care journey progresses, events will
                             show up here in order.
                         </p>
-                        <ol
+                        <div
                             v-else
-                            class="relative space-y-4 border-l border-border pl-4 text-sm"
+                            class="flex flex-col gap-3 text-sm"
                         >
-                            <li
-                                v-for="event in timelineEvents"
-                                :key="event.id"
-                                class="relative pl-2"
+                            <div
+                                class="flex items-center justify-between text-xs text-muted-foreground"
                             >
-                                <span
-                                    class="absolute -left-[9px] mt-1 h-2 w-2 rounded-full bg-primary"
-                                />
-                                <div class="flex flex-col">
-                                    <span class="font-medium text-foreground">
-                                        {{ event.description }}
-                                    </span>
-                                    <span class="text-xs text-muted-foreground">
-                                        {{ formatActivityTimestamp(event.occurred_at) }}
-                                    </span>
-                                    <span class="mt-0.5 text-xs text-muted-foreground">
-                                        {{ event.event_type }}
-                                    </span>
-                                    <span
-                                        v-if="formatTimelineSource(event.source)"
-                                        class="mt-0.5 text-xs text-muted-foreground"
+                                <span>
+                                    Showing {{ filteredTimelineEvents.length }}
+                                    {{ filteredTimelineEvents.length === 1 ? 'event' : 'events' }}
+                                </span>
+                                <div
+                                    class="inline-flex items-center gap-1 rounded-md border border-border bg-background/80 p-0.5"
+                                >
+                                    <button
+                                        type="button"
+                                        class="rounded px-2 py-1"
+                                        :class="selectedTimelineFilter === 'all'
+                                            ? 'bg-primary text-primary-foreground'
+                                            : 'text-foreground'"
+                                        @click="selectedTimelineFilter = 'all'"
                                     >
-                                        Source: {{ formatTimelineSource(event.source) }}
-                                    </span>
+                                        All
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="rounded px-2 py-1"
+                                        :class="selectedTimelineFilter === 'enrollment'
+                                            ? 'bg-primary text-primary-foreground'
+                                            : 'text-foreground'"
+                                        @click="selectedTimelineFilter = 'enrollment'"
+                                    >
+                                        Enrollment
+                                    </button>
                                 </div>
-                            </li>
-                        </ol>
+                            </div>
+
+                            <p
+                                v-if="filteredTimelineEvents.length === 0"
+                                class="text-sm text-muted-foreground"
+                            >
+                                No events match this filter yet.
+                            </p>
+
+                            <div
+                                v-else
+                                class="space-y-4"
+                            >
+                                <div
+                                    v-for="group in groupedTimelineEvents"
+                                    :key="group.date"
+                                    class="space-y-1"
+                                >
+                                    <div class="text-xs font-semibold text-muted-foreground">
+                                        {{ group.label }}
+                                    </div>
+                                    <ol class="relative space-y-4 border-l border-border pl-4 text-sm">
+                                        <li
+                                            v-for="event in group.events"
+                                            :key="event.id"
+                                            class="relative pl-2"
+                                        >
+                                            <span
+                                                class="absolute -left-[9px] mt-1 h-2 w-2 rounded-full bg-primary"
+                                            />
+                                            <div class="flex flex-col">
+                                                <span class="font-medium text-foreground">
+                                                    {{ event.description }}
+                                                </span>
+                                                <span class="text-xs text-muted-foreground">
+                                                    {{ formatActivityTimestamp(event.occurred_at) }}
+                                                </span>
+                                                <span class="mt-0.5 text-xs text-muted-foreground">
+                                                    {{ event.event_type }}
+                                                </span>
+                                                <span
+                                                    v-if="formatTimelineSource(event.source)"
+                                                    class="mt-0.5 text-xs text-muted-foreground"
+                                                >
+                                                    Source: {{ formatTimelineSource(event.source) }}
+                                                </span>
+                                            </div>
+                                        </li>
+                                    </ol>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
