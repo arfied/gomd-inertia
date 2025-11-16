@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\PatientEnrollmentController;
 use App\Http\Controllers\PatientActivityController;
+use App\Http\Controllers\PatientTimelineController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
@@ -25,6 +26,9 @@ Route::middleware('auth')->group(function () {
 
     Route::get('patient/activity/recent', [PatientActivityController::class, 'index'])
         ->name('patient.activity.recent');
+
+    Route::get('patient/events/timeline', [PatientTimelineController::class, 'index'])
+        ->name('patient.events.timeline');
 });
 
 require __DIR__.'/settings.php';

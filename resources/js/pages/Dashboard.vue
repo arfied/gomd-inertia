@@ -32,6 +32,22 @@ interface RecentActivityEntry {
     created_at: string | null;
 }
 
+interface TimelineEventEntry {
+    id: number;
+    aggregate_uuid: string;
+    event_type: string;
+    description: string;
+    source: string | null;
+    payload: Record<string, unknown> | null;
+    metadata: Record<string, unknown> | null;
+    occurred_at: string | null;
+}
+
+const timelineEvents = ref<TimelineEventEntry[]>([]);
+const loadingTimeline = ref(true);
+const timelineError = ref<string | null>(null);
+
+
 const enrollment = ref<PatientEnrollment | null>(null);
 const loadingEnrollment = ref(true);
 const enrollmentError = ref<string | null>(null);
@@ -61,6 +77,21 @@ function formatActivityTimestamp(isoString: string | null): string {
     }
 
     return date.toLocaleString();
+}
+
+function formatTimelineSource(source: string | null): string | null {
+    if (!source) {
+        return null;
+    }
+
+    switch (source) {
+        case 'registration':
+            return 'Registration';
+        case 'manual':
+            return 'Manual enrollment';
+        default:
+            return source;
+    }
 }
 
 function getXsrfToken(): string | null {
@@ -173,9 +204,37 @@ async function loadRecentActivity() {
     }
 }
 
+async function loadTimeline() {
+    try {
+        const response = await fetch('/patient/events/timeline', {
+            headers: {
+                Accept: 'application/json',
+            },
+            credentials: 'same-origin',
+        });
+
+        if (!response.ok) {
+            timelineError.value = `Failed to load events timeline (${response.status})`;
+            return;
+        }
+
+        const data = (await response.json()) as {
+            events: TimelineEventEntry[] | null;
+        };
+
+        timelineEvents.value = data.events ?? [];
+    } catch {
+        timelineError.value =
+            'A network error occurred while loading your events timeline.';
+    } finally {
+        loadingTimeline.value = false;
+    }
+}
+
 onMounted(() => {
     void loadEnrollment();
     void loadRecentActivity();
+    void loadTimeline();
 });
 </script>
 
@@ -298,14 +357,67 @@ onMounted(() => {
                 class="relative min-h-screen flex-1 rounded-xl border border-sidebar-border/70 md:min-h-min dark:border-sidebar-border"
             >
                 <PlaceholderPattern />
-                <div
-                    class="pointer-events-none absolute inset-0 flex items-center justify-center"
-                >
-                    <div
-                        class="rounded-lg bg-background/80 px-4 py-2 text-sm text-muted-foreground shadow-sm"
-                    >
-                        Patient events timeline and richer dashboard details will appear here
-                        as more projections and UI are implemented.
+                <div class="relative z-10 flex h-full flex-col bg-background/80">
+                    <div class="border-b border-sidebar-border/60 px-4 py-3">
+                        <h2 class="text-sm font-semibold text-foreground">
+                            Patient events timeline
+                        </h2>
+                        <p class="text-xs text-muted-foreground">
+                            A chronological view of key events in your patient record.
+                        </p>
+                    </div>
+                    <div class="flex-1 overflow-y-auto px-4 py-3">
+                        <div
+                            v-if="loadingTimeline"
+                            class="flex items-center space-x-2 text-sm text-muted-foreground"
+                        >
+                            <Spinner class="h-4 w-4" />
+                            <span>Loading timeline…</span>
+                        </div>
+                        <p
+                            v-else-if="timelineError"
+                            class="text-sm text-destructive"
+                        >
+                            {{ timelineError }}
+                        </p>
+                        <p
+                            v-else-if="!timelineEvents.length"
+                            class="text-sm text-muted-foreground"
+                        >
+                            No events yet. As your care journey progresses, events will
+                            show up here in order.
+                        </p>
+                        <ol
+                            v-else
+                            class="relative space-y-4 border-l border-border pl-4 text-sm"
+                        >
+                            <li
+                                v-for="event in timelineEvents"
+                                :key="event.id"
+                                class="relative pl-2"
+                            >
+                                <span
+                                    class="absolute -left-[9px] mt-1 h-2 w-2 rounded-full bg-primary"
+                                />
+                                <div class="flex flex-col">
+                                    <span class="font-medium text-foreground">
+                                        {{ event.description }}
+                                    </span>
+                                    <span class="text-xs text-muted-foreground">
+                                        {{ formatActivityTimestamp(event.occurred_at) }}
+                                    </span>
+                                    <span class="mt-0.5 text-xs text-muted-foreground">
+                                        {{ event.event_type }}
+                                    </span>
+                                    <span
+                                        v-if="formatTimelineSource(event.source)"
+                                        class="mt-0.5 text-xs text-muted-foreground"
+                                    >
+                                        Source: {{ formatTimelineSource(event.source) }}
+                                    </span>
+                                </div>
+                            </li>
+                        </ol>
                     </div>
                 </div>
             </div>
