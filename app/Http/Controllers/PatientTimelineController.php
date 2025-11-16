@@ -17,7 +17,7 @@ class PatientTimelineController extends Controller
 
         $filter = $request->query('filter');
 
-        if (! is_string($filter) || ! in_array($filter, ['enrollment'], true)) {
+        if (! is_string($filter) || ! in_array($filter, ['enrollment', 'other'], true)) {
             $filter = null;
         }
 

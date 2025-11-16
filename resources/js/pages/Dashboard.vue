@@ -47,16 +47,22 @@ const timelineEvents = ref<TimelineEventEntry[]>([]);
 const loadingTimeline = ref(true);
 const timelineError = ref<string | null>(null);
 
-const selectedTimelineFilter = ref<'all' | 'enrollment'>('all');
+const selectedTimelineFilter = ref<'all' | 'enrollment' | 'other'>('all');
 
 const filteredTimelineEvents = computed(() => {
-    if (selectedTimelineFilter.value === 'all') {
-        return timelineEvents.value;
+    if (selectedTimelineFilter.value === 'enrollment') {
+        return timelineEvents.value.filter(
+            (event) => event.event_type === 'patient.enrolled',
+        );
     }
 
-    return timelineEvents.value.filter(
-        (event) => event.event_type === 'patient.enrolled',
-    );
+    if (selectedTimelineFilter.value === 'other') {
+        return timelineEvents.value.filter(
+            (event) => event.event_type !== 'patient.enrolled',
+        );
+    }
+
+    return timelineEvents.value;
 });
 
 interface TimelineEventGroup {
@@ -268,6 +274,8 @@ async function loadTimeline() {
 
         if (selectedTimelineFilter.value === 'enrollment') {
             params.set('filter', 'enrollment');
+        } else if (selectedTimelineFilter.value === 'other') {
+            params.set('filter', 'other');
         }
 
         const queryString = params.toString();
@@ -496,6 +504,16 @@ onMounted(() => {
                                         @click="selectedTimelineFilter = 'enrollment'; reloadTimelineForCurrentFilter()"
                                     >
                                         Enrollment
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="rounded px-2 py-1"
+                                        :class="selectedTimelineFilter === 'other'
+                                            ? 'bg-primary text-primary-foreground'
+                                            : 'text-foreground'"
+                                        @click="selectedTimelineFilter = 'other'; reloadTimelineForCurrentFilter()"
+                                    >
+                                        Other
                                     </button>
                                 </div>
                             </div>

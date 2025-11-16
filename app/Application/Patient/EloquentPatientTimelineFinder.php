@@ -25,6 +25,8 @@ class EloquentPatientTimelineFinder implements PatientTimelineFinder
 
         if ($filter === 'enrollment') {
             $query->where('event_type', 'patient.enrolled');
+        } elseif ($filter === 'other') {
+            $query->where('event_type', '!=', 'patient.enrolled');
         }
 
         return $query
