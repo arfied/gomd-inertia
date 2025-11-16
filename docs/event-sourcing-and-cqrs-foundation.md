@@ -412,8 +412,39 @@ Next to the enrollment card, the dashboard renders:
 
 - On mount, the Dashboard component issues a `GET /patient/activity/recent` request and
   populates a small "Recent activity" list in the UI, with loading and error states.
-- A larger placeholder panel remains reserved for a future **patient events timeline**
-  that will visualise a richer slice of the event stream.
+- At the bottom of the dashboard, the **patient events timeline** panel visualises a
+  slice of the event stream for the current patient's aggregate:
+  - **Query**: `App\\Application\\Patient\\Queries\\GetPatientEventTimelineByUserId`
+  - **Handler**: `GetPatientEventTimelineByUserIdHandler`
+  - **Finder**: `PatientTimelineFinder` (implemented by `EloquentPatientTimelineFinder`)
+  - **HTTP route**: `GET /patient/events/timeline`
+  - **Controller**: `App\\Http\\Controllers\\PatientTimelineController@index`
+  - The controller uses the `QueryBus` and returns JSON of the form:
+
+    ```json
+    {
+      "events": [
+        {
+          "id": 1,
+          "aggregate_uuid": "patient-uuid",
+          "event_type": "patient.enrolled",
+          "description": "Patient enrolled in TeleMed Pro.",
+          "source": "registration",
+          "payload": {
+            "user_id": 123
+          },
+          "metadata": {
+            "source": "registration"
+          },
+          "occurred_at": "2024-09-01T12:34:56.000000Z"
+        }
+      ]
+    }
+    ```
+
+- On mount, the Dashboard component issues a `GET /patient/events/timeline` request
+  to populate this timeline panel, with loading, empty, and error states mirroring the
+  recent activity card.
 
 This keeps the Dashboard UI thin: it delegates domain logic to the existing command and
 query handlers for the enrollment and recent activity cards, while the surrounding
