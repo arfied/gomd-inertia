@@ -18,7 +18,7 @@ it('returns timeline events for a user when they exist', function () {
         {
         }
 
-        public function findTimelineByUserId(int $userId, int $limit = 50): Collection
+        public function findTimelineByUserId(int $userId, int $limit = 50, ?string $filter = null): Collection
         {
             return $this->result;
         }
@@ -41,7 +41,7 @@ it('returns an empty collection when no events exist for the given user', functi
         {
         }
 
-        public function findTimelineByUserId(int $userId, int $limit = 50): Collection
+        public function findTimelineByUserId(int $userId, int $limit = 50, ?string $filter = null): Collection
         {
             return $this->result;
         }

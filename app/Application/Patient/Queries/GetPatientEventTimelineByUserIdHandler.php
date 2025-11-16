@@ -21,7 +21,7 @@ class GetPatientEventTimelineByUserIdHandler implements QueryHandler
             throw new InvalidArgumentException('GetPatientEventTimelineByUserIdHandler can only handle GetPatientEventTimelineByUserId queries.');
         }
 
-        return $this->finder->findTimelineByUserId($query->userId, $query->limit);
+        return $this->finder->findTimelineByUserId($query->userId, $query->limit, $query->filter);
     }
 }
 

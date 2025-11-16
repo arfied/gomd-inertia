@@ -12,7 +12,7 @@ class EloquentPatientTimelineFinder implements PatientTimelineFinder
     ) {
     }
 
-    public function findTimelineByUserId(int $userId, int $limit = 50): Collection
+    public function findTimelineByUserId(int $userId, int $limit = 50, ?string $filter = null): Collection
     {
         $enrollment = $this->enrollmentFinder->findByUserId($userId);
 
@@ -20,8 +20,14 @@ class EloquentPatientTimelineFinder implements PatientTimelineFinder
             return collect();
         }
 
-        return StoredEvent::query()
-            ->where('aggregate_uuid', $enrollment->patient_uuid)
+        $query = StoredEvent::query()
+            ->where('aggregate_uuid', $enrollment->patient_uuid);
+
+        if ($filter === 'enrollment') {
+            $query->where('event_type', 'patient.enrolled');
+        }
+
+        return $query
             ->orderBy('occurred_at')
             ->limit($limit)
             ->get();

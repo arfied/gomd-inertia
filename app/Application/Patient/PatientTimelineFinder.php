@@ -12,8 +12,9 @@ interface PatientTimelineFinder
      *
      * @param  int  $userId
      * @param  int  $limit
+     * @param  string|null  $filter
      * @return Collection<int, StoredEvent>
      */
-    public function findTimelineByUserId(int $userId, int $limit = 50): Collection;
+    public function findTimelineByUserId(int $userId, int $limit = 50, ?string $filter = null): Collection;
 }
 

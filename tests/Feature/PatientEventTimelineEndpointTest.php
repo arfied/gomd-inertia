@@ -101,3 +101,52 @@ it('returns a patient events timeline for the authenticated user', function () {
         ->assertJsonPath('events.0.metadata.foo', 'bar');
 });
 
+it('can filter the patient events timeline by enrollment events only', function () {
+    $user = User::factory()->create();
+
+    $patientUuid = (string) Str::uuid();
+
+    PatientEnrollment::create([
+        'patient_uuid' => $patientUuid,
+        'user_id' => $user->id,
+        'source' => 'manual',
+        'metadata' => null,
+        'enrolled_at' => now(),
+    ]);
+
+    // Enrollment event
+    StoredEvent::create([
+        'aggregate_uuid' => $patientUuid,
+        'aggregate_type' => 'patient',
+        'event_type' => 'patient.enrolled',
+        'event_data' => [
+            'user_id' => $user->id,
+        ],
+        'metadata' => null,
+        'occurred_at' => now()->subMinutes(10),
+    ]);
+
+    // Some other patient-related event for the same aggregate
+    StoredEvent::create([
+        'aggregate_uuid' => $patientUuid,
+        'aggregate_type' => 'patient',
+        'event_type' => 'patient.profile_updated',
+        'event_data' => [
+            'user_id' => $user->id,
+            'field' => 'name',
+        ],
+        'metadata' => null,
+        'occurred_at' => now()->subMinutes(5),
+    ]);
+
+    $this->actingAs($user);
+
+    $response = $this->getJson(route('patient.events.timeline', ['filter' => 'enrollment']));
+
+    $response
+        ->assertOk()
+        ->assertJsonCount(1, 'events')
+        ->assertJsonPath('events.0.event_type', 'patient.enrolled');
+});
+
+

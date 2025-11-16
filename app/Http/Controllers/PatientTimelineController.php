@@ -15,9 +15,15 @@ class PatientTimelineController extends Controller
     {
         $user = $request->user();
 
+        $filter = $request->query('filter');
+
+        if (! is_string($filter) || ! in_array($filter, ['enrollment'], true)) {
+            $filter = null;
+        }
+
         /** @var Collection<int, StoredEvent> $events */
         $events = $queryBus->ask(
-            new GetPatientEventTimelineByUserId($user->id)
+            new GetPatientEventTimelineByUserId($user->id, filter: $filter)
         );
 
         return response()->json([

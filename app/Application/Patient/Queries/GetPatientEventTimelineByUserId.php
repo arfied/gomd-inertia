@@ -9,6 +9,7 @@ class GetPatientEventTimelineByUserId implements Query
     public function __construct(
         public int $userId,
         public int $limit = 50,
+        public ?string $filter = null,
     ) {
     }
 }
