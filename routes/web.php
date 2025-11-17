@@ -7,6 +7,7 @@ use App\Http\Controllers\PatientTimelineController;
 use App\Http\Controllers\PatientDemographicsController;
 use App\Http\Controllers\PatientDocumentsController;
 use App\Http\Controllers\PatientListController;
+use App\Http\Controllers\PatientMedicalHistoryController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
@@ -67,6 +68,18 @@ Route::middleware('auth')->group(function () {
 
     Route::get('patients/{patientUuid}', [PatientListController::class, 'show'])
         ->name('patients.show');
+
+    Route::post('patients/{patientUuid}/medical-history/allergies', [PatientMedicalHistoryController::class, 'storeAllergy'])
+        ->name('patients.medical-history.allergies.store');
+
+    Route::post('patients/{patientUuid}/medical-history/conditions', [PatientMedicalHistoryController::class, 'storeCondition'])
+        ->name('patients.medical-history.conditions.store');
+
+    Route::post('patients/{patientUuid}/medical-history/medications', [PatientMedicalHistoryController::class, 'storeMedication'])
+        ->name('patients.medical-history.medications.store');
+
+    Route::post('patients/{patientUuid}/medical-history/visit-summary', [PatientMedicalHistoryController::class, 'storeVisitSummary'])
+        ->name('patients.medical-history.visit-summary.store');
 });
 
 require __DIR__.'/settings.php';
