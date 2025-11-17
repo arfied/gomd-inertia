@@ -47,6 +47,8 @@ use App\Application\Patient\Queries\GetPatientDemographicsByPatientUuid;
 use App\Application\Patient\Queries\GetPatientDemographicsByPatientUuidHandler;
 use App\Application\Patient\Queries\GetPatientDemographicsByUserId;
 use App\Application\Patient\Queries\GetPatientDemographicsByUserIdHandler;
+use App\Application\Patient\Queries\GetPatientDocumentsByPatientUuid;
+use App\Application\Patient\Queries\GetPatientDocumentsByPatientUuidHandler;
 use App\Application\Patient\Queries\GetPatientDocumentsByUserId;
 use App\Application\Patient\Queries\GetPatientDocumentsByUserIdHandler;
 use App\Application\Patient\Queries\GetPatientEnrollmentByUserId;
@@ -217,6 +219,11 @@ class AppServiceProvider extends ServiceProvider
             $bus->register(
                 GetPatientDocumentsByUserId::class,
                 $app->make(GetPatientDocumentsByUserIdHandler::class)
+            );
+
+            $bus->register(
+                GetPatientDocumentsByPatientUuid::class,
+                $app->make(GetPatientDocumentsByPatientUuidHandler::class)
             );
 
             $bus->register(
