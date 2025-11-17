@@ -6,6 +6,7 @@ use App\Http\Controllers\PatientSubscriptionController;
 use App\Http\Controllers\PatientTimelineController;
 use App\Http\Controllers\PatientDemographicsController;
 use App\Http\Controllers\PatientDocumentsController;
+use App\Http\Controllers\PatientListController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
@@ -47,6 +48,12 @@ Route::middleware('auth')->group(function () {
 
     Route::get('patient/events/timeline', [PatientTimelineController::class, 'index'])
         ->name('patient.events.timeline');
+
+    Route::get('patients', [PatientListController::class, 'index'])
+        ->name('patients.index');
+
+    Route::get('patients/count', [PatientListController::class, 'count'])
+        ->name('patients.count');
 });
 
 require __DIR__.'/settings.php';

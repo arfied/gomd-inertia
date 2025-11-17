@@ -14,6 +14,7 @@ use App\Application\Patient\EloquentPatientDocumentFinder;
 use App\Application\Patient\EloquentPatientDocumentProjector;
 use App\Application\Patient\EloquentPatientEnrollmentFinder;
 use App\Application\Patient\EloquentPatientEnrollmentProjector;
+use App\Application\Patient\EloquentPatientListFinder;
 use App\Application\Patient\EloquentPatientSubscriptionFinder;
 use App\Application\Patient\EloquentPatientTimelineFinder;
 use App\Application\Patient\Handlers\EnrollPatientHandler;
@@ -27,6 +28,7 @@ use App\Application\Patient\PatientDocumentFinder;
 use App\Application\Patient\PatientDocumentProjector;
 use App\Application\Patient\PatientEnrollmentFinder;
 use App\Application\Patient\PatientEnrollmentProjector;
+use App\Application\Patient\PatientListFinder;
 use App\Application\Patient\PatientSubscriptionFinder;
 use App\Application\Patient\PatientTimelineFinder;
 use App\Application\Patient\Queries\GetPatientDemographicsByPatientUuid;
@@ -41,6 +43,10 @@ use App\Application\Patient\Queries\GetPatientEnrollmentByPatientUuid;
 use App\Application\Patient\Queries\GetPatientEnrollmentByPatientUuidHandler;
 use App\Application\Patient\Queries\GetPatientEventTimelineByUserId;
 use App\Application\Patient\Queries\GetPatientEventTimelineByUserIdHandler;
+use App\Application\Patient\Queries\GetPatientList;
+use App\Application\Patient\Queries\GetPatientListHandler;
+use App\Application\Patient\Queries\GetPatientListCount;
+use App\Application\Patient\Queries\GetPatientListCountHandler;
 use App\Application\Patient\Queries\GetPatientSubscriptionByUserId;
 use App\Application\Patient\Queries\GetPatientSubscriptionByUserIdHandler;
 use App\Application\Patient\Queries\GetRecentPatientActivityByUserId;
@@ -94,6 +100,7 @@ class AppServiceProvider extends ServiceProvider
 
         $this->app->bind(PatientTimelineFinder::class, EloquentPatientTimelineFinder::class);
         $this->app->bind(PatientSubscriptionFinder::class, EloquentPatientSubscriptionFinder::class);
+        $this->app->bind(PatientListFinder::class, EloquentPatientListFinder::class);
     }
 
     /**
@@ -169,6 +176,16 @@ class AppServiceProvider extends ServiceProvider
             $bus->register(
                 GetPatientDocumentsByUserId::class,
                 $app->make(GetPatientDocumentsByUserIdHandler::class)
+            );
+
+            $bus->register(
+                GetPatientList::class,
+                $app->make(GetPatientListHandler::class)
+            );
+
+            $bus->register(
+                GetPatientListCount::class,
+                $app->make(GetPatientListCountHandler::class)
             );
         });
     }
