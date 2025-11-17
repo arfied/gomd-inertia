@@ -6,6 +6,7 @@ import type { BreadcrumbItem } from '@/types'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Spinner } from '@/components/ui/spinner'
 import { Badge } from '@/components/ui/badge'
 
@@ -140,6 +141,74 @@ const countError = ref<string | null>(null)
 const selectedPatient = ref<PatientDetail | null>(null)
 const loadingDetail = ref(false)
 const detailError = ref<string | null>(null)
+const showAllergyForm = ref(false)
+const allergyForm = ref({
+  allergen: '',
+  reaction: '',
+  severity: '',
+  notes: '',
+})
+const submittingAllergy = ref(false)
+const allergyError = ref<string | null>(null)
+
+const showConditionForm = ref(false)
+const conditionForm = ref({
+  condition_name: '',
+  diagnosed_at: '',
+  notes: '',
+  had_condition_before: false,
+  is_chronic: false,
+})
+const submittingCondition = ref(false)
+const conditionError = ref<string | null>(null)
+
+const showMedicationForm = ref(false)
+const medicationForm = ref({
+  medication_id: '',
+  dosage: '',
+  frequency: '',
+  start_date: '',
+  end_date: '',
+  notes: '',
+})
+const submittingMedication = ref(false)
+const medicationError = ref<string | null>(null)
+
+const showVisitSummaryForm = ref(false)
+const visitSummaryForm = ref({
+  past_injuries: false,
+  past_injuries_details: '',
+  surgery: false,
+  surgery_details: '',
+  chronic_conditions_details: '',
+  chronic_pain: false,
+  chronic_pain_details: '',
+  family_history_conditions_text: '',
+})
+const submittingVisitSummary = ref(false)
+const visitSummaryError = ref<string | null>(null)
+
+async function extractErrorMessage(defaultMessage: string, response: Response): Promise<string> {
+  try {
+    const data = (await response.json()) as any
+
+    if (data && typeof data.message === 'string') {
+      return data.message
+    }
+
+    if (data && data.errors && typeof data.errors === 'object') {
+      const firstError = Object.values(data.errors as Record<string, string[]>)[0]?.[0]
+      if (typeof firstError === 'string') {
+        return firstError
+      }
+    }
+  } catch {
+    // ignore
+  }
+
+  return defaultMessage
+}
+
 
 const hasNextPage = computed(() => !!meta.value?.next_page_url)
 const hasPrevPage = computed(() => !!meta.value?.prev_page_url)
@@ -246,6 +315,208 @@ async function loadDetail(patientUuid: string) {
     loadingDetail.value = false
   }
 }
+
+function getCsrfToken(): string {
+  return document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? ''
+}
+
+async function submitAllergy() {
+  if (!selectedPatient.value) return
+
+  const patientUuid = selectedPatient.value.patient_uuid
+
+  submittingAllergy.value = true
+  allergyError.value = null
+
+  try {
+    const response = await fetch(`/patients/${patientUuid}/medical-history/allergies`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        'X-CSRF-TOKEN': getCsrfToken(),
+      },
+      credentials: 'same-origin',
+      body: JSON.stringify(allergyForm.value),
+    })
+
+    if (!response.ok) {
+      allergyError.value = await extractErrorMessage('Failed to save allergy.', response)
+      return
+    }
+
+    await loadDetail(patientUuid)
+
+    showAllergyForm.value = false
+    allergyForm.value = {
+      allergen: '',
+      reaction: '',
+      severity: '',
+      notes: '',
+    }
+  } catch {
+    allergyError.value = 'A network error occurred while saving allergy.'
+  } finally {
+    submittingAllergy.value = false
+  }
+}
+
+async function submitCondition() {
+  if (!selectedPatient.value) return
+
+  const patientUuid = selectedPatient.value.patient_uuid
+
+  submittingCondition.value = true
+  conditionError.value = null
+
+  try {
+    const response = await fetch(`/patients/${patientUuid}/medical-history/conditions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        'X-CSRF-TOKEN': getCsrfToken(),
+      },
+      credentials: 'same-origin',
+      body: JSON.stringify(conditionForm.value),
+    })
+
+    if (!response.ok) {
+      conditionError.value = await extractErrorMessage('Failed to save condition.', response)
+      return
+    }
+
+    await loadDetail(patientUuid)
+
+    showConditionForm.value = false
+    conditionForm.value = {
+      condition_name: '',
+      diagnosed_at: '',
+      notes: '',
+      had_condition_before: false,
+      is_chronic: false,
+    }
+  } catch {
+    conditionError.value = 'A network error occurred while saving condition.'
+  } finally {
+    submittingCondition.value = false
+  }
+}
+
+async function submitMedication() {
+  if (!selectedPatient.value) return
+
+  const patientUuid = selectedPatient.value.patient_uuid
+
+  submittingMedication.value = true
+  medicationError.value = null
+
+  const payload = {
+    ...medicationForm.value,
+    medication_id: medicationForm.value.medication_id
+      ? Number(medicationForm.value.medication_id)
+      : null,
+  }
+
+  try {
+    const response = await fetch(`/patients/${patientUuid}/medical-history/medications`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        'X-CSRF-TOKEN': getCsrfToken(),
+      },
+      credentials: 'same-origin',
+      body: JSON.stringify(payload),
+    })
+
+    if (!response.ok) {
+      medicationError.value = await extractErrorMessage('Failed to save medication.', response)
+      return
+    }
+
+    await loadDetail(patientUuid)
+
+    showMedicationForm.value = false
+    medicationForm.value = {
+      medication_id: '',
+      dosage: '',
+      frequency: '',
+      start_date: '',
+      end_date: '',
+      notes: '',
+    }
+  } catch {
+    medicationError.value = 'A network error occurred while saving medication.'
+  } finally {
+    submittingMedication.value = false
+  }
+}
+
+async function submitVisitSummary() {
+  if (!selectedPatient.value) return
+
+  const patientUuid = selectedPatient.value.patient_uuid
+
+  submittingVisitSummary.value = true
+  visitSummaryError.value = null
+
+  const familyConditions = visitSummaryForm.value.family_history_conditions_text
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0)
+
+  const payload: Record<string, unknown> = {
+    past_injuries: visitSummaryForm.value.past_injuries,
+    past_injuries_details: visitSummaryForm.value.past_injuries_details || null,
+    surgery: visitSummaryForm.value.surgery,
+    surgery_details: visitSummaryForm.value.surgery_details || null,
+    chronic_conditions_details: visitSummaryForm.value.chronic_conditions_details || null,
+    chronic_pain: visitSummaryForm.value.chronic_pain,
+    chronic_pain_details: visitSummaryForm.value.chronic_pain_details || null,
+  }
+
+  if (familyConditions.length > 0) {
+    payload.family_history_conditions = familyConditions
+  }
+
+  try {
+    const response = await fetch(`/patients/${patientUuid}/medical-history/visit-summary`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        'X-CSRF-TOKEN': getCsrfToken(),
+      },
+      credentials: 'same-origin',
+      body: JSON.stringify(payload),
+    })
+
+    if (!response.ok) {
+      visitSummaryError.value = await extractErrorMessage('Failed to save visit summary.', response)
+      return
+    }
+
+    await loadDetail(patientUuid)
+
+    showVisitSummaryForm.value = false
+    visitSummaryForm.value = {
+      past_injuries: false,
+      past_injuries_details: '',
+      surgery: false,
+      surgery_details: '',
+      chronic_conditions_details: '',
+      chronic_pain: false,
+      chronic_pain_details: '',
+      family_history_conditions_text: '',
+    }
+  } catch {
+    visitSummaryError.value = 'A network error occurred while saving visit summary.'
+  } finally {
+    submittingVisitSummary.value = false
+  }
+}
+
 
 function applyFilters() {
   count.value = null
@@ -459,12 +730,53 @@ onMounted(() => {
               </p>
             </div>
 
-            <div v-if="selectedPatient.medical_history" class="space-y-3">
-              <p class="text-sm font-medium text-foreground">Medical history</p>
+            <div v-if="selectedPatient.medical_history" class="space-y-4">
+                <p class="text-sm font-medium text-foreground">Medical history</p>
 
-              <div v-if="selectedPatient.medical_history.allergies.length">
-                <p class="font-semibold">Allergies</p>
-                <ul class="list-disc pl-4">
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between">
+                        <p class="font-semibold">Allergies</p>
+                        <Button type="button" size="xs" variant="outline" @click="showAllergyForm = !showAllergyForm">
+                            {{ showAllergyForm ? 'Cancel' : 'Add' }}
+                        </Button>
+                    </div>
+
+                <p v-if="allergyError" class="text-xs text-destructive">{{ allergyError }}</p>
+
+                <form v-if="showAllergyForm" class="space-y-2" @submit.prevent="submitAllergy">
+                  <div class="grid gap-1">
+                    <Label for="allergen">Allergen</Label>
+                    <Input id="allergen" v-model="allergyForm.allergen" type="text" required class="h-8" />
+                  </div>
+                  <div class="grid gap-1">
+                    <Label for="reaction">Reaction</Label>
+                    <Input id="reaction" v-model="allergyForm.reaction" type="text" class="h-8" />
+                  </div>
+                  <div class="grid gap-1">
+                    <Label for="severity">Severity</Label>
+                    <Input id="severity" v-model="allergyForm.severity" type="text" class="h-8" />
+                  </div>
+                  <div class="grid gap-1">
+                    <Label for="allergy-notes">Notes</Label>
+                    <textarea
+                      id="allergy-notes"
+                      v-model="allergyForm.notes"
+                      rows="2"
+                      class="min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                    />
+                  </div>
+                  <div class="flex gap-2">
+                    <Button type="submit" size="xs" :disabled="submittingAllergy">
+                      <Spinner v-if="submittingAllergy" class="mr-1 h-3 w-3" />
+                      <span>{{ submittingAllergy ? 'Saving…' : 'Save allergy' }}</span>
+                    </Button>
+                    <Button type="button" size="xs" variant="ghost" @click="showAllergyForm = false">
+                      Cancel
+                    </Button>
+                  </div>
+                </form>
+
+                <ul v-if="selectedPatient.medical_history.allergies.length" class="list-disc pl-4">
                   <li v-for="allergy in selectedPatient.medical_history.allergies" :key="allergy.id">
                     <span class="font-medium">{{ allergy.allergen }}</span>
                     <span v-if="allergy.reaction"> – {{ allergy.reaction }}</span>
@@ -474,11 +786,78 @@ onMounted(() => {
                     <span v-if="allergy.notes" class="block text-muted-foreground">{{ allergy.notes }}</span>
                   </li>
                 </ul>
+                <p v-else class="text-xs text-muted-foreground">No allergies recorded.</p>
               </div>
 
-              <div v-if="selectedPatient.medical_history.conditions.length">
-                <p class="font-semibold">Conditions</p>
-                <ul class="list-disc pl-4">
+              <div class="space-y-2">
+                <div class="flex items-center justify-between">
+                  <p class="font-semibold">Conditions</p>
+                  <Button type="button" size="xs" variant="outline" @click="showConditionForm = !showConditionForm">
+                    {{ showConditionForm ? 'Cancel' : 'Add' }}
+                  </Button>
+                </div>
+
+                <p v-if="conditionError" class="text-xs text-destructive">{{ conditionError }}</p>
+
+                <form v-if="showConditionForm" class="space-y-2" @submit.prevent="submitCondition">
+                  <div class="grid gap-1">
+                    <Label for="condition-name">Condition</Label>
+                    <Input
+                      id="condition-name"
+                      v-model="conditionForm.condition_name"
+                      type="text"
+                      required
+                      class="h-8"
+                    />
+                  </div>
+                  <div class="grid gap-1">
+                    <Label for="condition-diagnosed-at">Diagnosed at</Label>
+                    <Input
+                      id="condition-diagnosed-at"
+                      v-model="conditionForm.diagnosed_at"
+                      type="date"
+                      class="h-8"
+                    />
+                  </div>
+                  <div class="flex flex-wrap gap-4">
+                    <label class="flex items-center gap-2 text-xs">
+                      <input
+                        v-model="conditionForm.had_condition_before"
+                        type="checkbox"
+                        class="h-3 w-3 border-input text-primary"
+                      />
+                      <span>Had condition before</span>
+                    </label>
+                    <label class="flex items-center gap-2 text-xs">
+                      <input
+                        v-model="conditionForm.is_chronic"
+                        type="checkbox"
+                        class="h-3 w-3 border-input text-primary"
+                      />
+                      <span>Chronic</span>
+                    </label>
+                  </div>
+                  <div class="grid gap-1">
+                    <Label for="condition-notes">Notes</Label>
+                    <textarea
+                      id="condition-notes"
+                      v-model="conditionForm.notes"
+                      rows="2"
+                      class="min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                    />
+                  </div>
+                  <div class="flex gap-2">
+                    <Button type="submit" size="xs" :disabled="submittingCondition">
+                      <Spinner v-if="submittingCondition" class="mr-1 h-3 w-3" />
+                      <span>{{ submittingCondition ? 'Saving…' : 'Save condition' }}</span>
+                    </Button>
+                    <Button type="button" size="xs" variant="ghost" @click="showConditionForm = false">
+                      Cancel
+                    </Button>
+                  </div>
+                </form>
+
+                <ul v-if="selectedPatient.medical_history.conditions.length" class="list-disc pl-4">
                   <li v-for="condition in selectedPatient.medical_history.conditions" :key="condition.id">
                     <span class="font-medium">{{ condition.condition_name }}</span>
                     <span v-if="condition.diagnosed_at"> – diagnosed {{ formatDate(condition.diagnosed_at) }}</span>
@@ -486,63 +865,249 @@ onMounted(() => {
                     <span v-if="condition.notes" class="block text-muted-foreground">{{ condition.notes }}</span>
                   </li>
                 </ul>
+                <p v-else class="text-xs text-muted-foreground">No conditions recorded.</p>
               </div>
 
-              <div v-if="selectedPatient.medical_history.medications.length">
-                <p class="font-semibold">Medications</p>
-                <ul class="list-disc pl-4">
+              <div class="space-y-2">
+                <div class="flex items-center justify-between">
+                  <p class="font-semibold">Medications</p>
+                  <Button type="button" size="xs" variant="outline" @click="showMedicationForm = !showMedicationForm">
+                    {{ showMedicationForm ? 'Cancel' : 'Add' }}
+                  </Button>
+                </div>
+
+                <p v-if="medicationError" class="text-xs text-destructive">{{ medicationError }}</p>
+
+                <form v-if="showMedicationForm" class="space-y-2" @submit.prevent="submitMedication">
+                  <div class="grid gap-1">
+                    <Label for="medication-id">Medication ID</Label>
+                    <Input
+                      id="medication-id"
+                      v-model="medicationForm.medication_id"
+                      type="number"
+                      min="1"
+                      required
+                      class="h-8"
+                    />
+                  </div>
+                  <div class="grid gap-1">
+                    <Label for="medication-dosage">Dosage</Label>
+                    <Input
+                      id="medication-dosage"
+                      v-model="medicationForm.dosage"
+                      type="text"
+                      required
+                      class="h-8"
+                    />
+                  </div>
+                  <div class="grid gap-1">
+                    <Label for="medication-frequency">Frequency</Label>
+                    <Input
+                      id="medication-frequency"
+                      v-model="medicationForm.frequency"
+                      type="text"
+                      required
+                      class="h-8"
+                    />
+                  </div>
+                  <div class="grid grid-cols-2 gap-2">
+                    <div class="grid gap-1">
+                      <Label for="medication-start-date">Start date</Label>
+                      <Input
+                        id="medication-start-date"
+                        v-model="medicationForm.start_date"
+                        type="date"
+                        class="h-8"
+                      />
+                    </div>
+                    <div class="grid gap-1">
+                      <Label for="medication-end-date">End date</Label>
+                      <Input
+                        id="medication-end-date"
+                        v-model="medicationForm.end_date"
+                        type="date"
+                        class="h-8"
+                      />
+                    </div>
+                  </div>
+                  <div class="grid gap-1">
+                    <Label for="medication-notes">Notes</Label>
+                    <textarea
+                      id="medication-notes"
+                      v-model="medicationForm.notes"
+                      rows="2"
+                      class="min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                    />
+                  </div>
+                  <div class="flex gap-2">
+                    <Button type="submit" size="xs" :disabled="submittingMedication">
+                      <Spinner v-if="submittingMedication" class="mr-1 h-3 w-3" />
+                      <span>{{ submittingMedication ? 'Saving…' : 'Save medication' }}</span>
+                    </Button>
+                    <Button type="button" size="xs" variant="ghost" @click="showMedicationForm = false">
+                      Cancel
+                    </Button>
+                  </div>
+                </form>
+
+                <ul v-if="selectedPatient.medical_history.medications.length" class="list-disc pl-4">
                   <li v-for="med in selectedPatient.medical_history.medications" :key="med.id">
                     <span class="font-medium">{{ med.medication_name || 'Medication #' + med.medication_id }}</span>
                     <span v-if="med.dosage"> – {{ med.dosage }}</span>
                     <span v-if="med.frequency" class="ml-1 text-xs text-muted-foreground">({{ med.frequency }})</span>
                     <div class="text-muted-foreground">
                       <span v-if="med.start_date">{{ formatDate(med.start_date) }}</span>
-                      <span v-if="med.start_date && med.end_date">
-                        –
-                      </span>
+                      <span v-if="med.start_date && med.end_date"> – </span>
                       <span v-if="med.end_date">{{ formatDate(med.end_date) }}</span>
                     </div>
                     <span v-if="med.notes" class="block text-muted-foreground">{{ med.notes }}</span>
                   </li>
                 </ul>
+                <p v-else class="text-xs text-muted-foreground">No medications recorded.</p>
               </div>
 
-              <div v-if="selectedPatient.medical_history.surgical_history">
-                <p class="font-semibold">Surgical / injuries</p>
-                <p v-if="selectedPatient.medical_history.surgical_history.past_injuries">
-                  Past injuries:
-                  <span>{{ selectedPatient.medical_history.surgical_history.past_injuries_details || 'details not provided' }}</span>
-                </p>
-                <p v-if="selectedPatient.medical_history.surgical_history.surgery">
-                  Surgeries:
-                  <span>{{ selectedPatient.medical_history.surgical_history.surgery_details || 'details not provided' }}</span>
-                </p>
-                <p v-if="selectedPatient.medical_history.surgical_history.chronic_conditions_details">
-                  Chronic conditions:
-                  <span>{{ selectedPatient.medical_history.surgical_history.chronic_conditions_details }}</span>
-                </p>
-              </div>
+              <div class="space-y-2">
+                <div class="flex items-center justify-between">
+                  <p class="font-semibold">Visit summary</p>
+                  <Button type="button" size="xs" variant="outline" @click="showVisitSummaryForm = !showVisitSummaryForm">
+                    {{ showVisitSummaryForm ? 'Cancel' : 'Edit summary' }}
+                  </Button>
+                </div>
 
-              <div v-if="selectedPatient.medical_history.family_history">
-                <p class="font-semibold">Family history</p>
-                <p>
-                  Chronic pain:
-                  <span>
-                    {{ selectedPatient.medical_history.family_history.chronic_pain ? 'yes' : 'no' }}
-                  </span>
-                </p>
-                <p v-if="selectedPatient.medical_history.family_history.chronic_pain_details">
-                  Details:
-                  <span>{{ selectedPatient.medical_history.family_history.chronic_pain_details }}</span>
-                </p>
-                <ul v-if="selectedPatient.medical_history.family_history.conditions.length" class="list-disc pl-4">
-                  <li
-                    v-for="condition in selectedPatient.medical_history.family_history.conditions"
-                    :key="condition.id"
-                  >
-                    {{ condition.name }}
-                  </li>
-                </ul>
+                <p v-if="visitSummaryError" class="text-xs text-destructive">{{ visitSummaryError }}</p>
+
+                <div class="space-y-1">
+                  <div v-if="selectedPatient.medical_history.surgical_history">
+                    <p class="font-semibold">Surgical / injuries</p>
+                    <p v-if="selectedPatient.medical_history.surgical_history.past_injuries">
+                      Past injuries:
+                      <span>{{ selectedPatient.medical_history.surgical_history.past_injuries_details || 'details not provided' }}</span>
+                    </p>
+                    <p v-if="selectedPatient.medical_history.surgical_history.surgery">
+                      Surgeries:
+                      <span>{{ selectedPatient.medical_history.surgical_history.surgery_details || 'details not provided' }}</span>
+                    </p>
+                    <p v-if="selectedPatient.medical_history.surgical_history.chronic_conditions_details">
+                      Chronic conditions:
+                      <span>{{ selectedPatient.medical_history.surgical_history.chronic_conditions_details }}</span>
+                    </p>
+                  </div>
+                  <p v-else class="text-xs text-muted-foreground">No surgical history recorded.</p>
+
+                  <div v-if="selectedPatient.medical_history.family_history">
+                    <p class="font-semibold">Family history</p>
+                    <p>
+                      Chronic pain:
+                      <span>{{ selectedPatient.medical_history.family_history.chronic_pain ? 'yes' : 'no' }}</span>
+                    </p>
+                    <p v-if="selectedPatient.medical_history.family_history.chronic_pain_details">
+                      Details:
+                      <span>{{ selectedPatient.medical_history.family_history.chronic_pain_details }}</span>
+                    </p>
+                    <ul v-if="selectedPatient.medical_history.family_history.conditions.length" class="list-disc pl-4">
+                      <li
+                        v-for="condition in selectedPatient.medical_history.family_history.conditions"
+                        :key="condition.id"
+                      >
+                        {{ condition.name }}
+                      </li>
+                    </ul>
+                  </div>
+                  <p v-else class="text-xs text-muted-foreground">No family history recorded.</p>
+                </div>
+
+                <form v-if="showVisitSummaryForm" class="space-y-2" @submit.prevent="submitVisitSummary">
+                  <div class="grid gap-1">
+                    <Label for="past-injuries">Past injuries</Label>
+                    <label class="flex items-center gap-2 text-xs">
+                      <input
+                        id="past-injuries"
+                        v-model="visitSummaryForm.past_injuries"
+                        type="checkbox"
+                        class="h-3 w-3 border-input text-primary"
+                      />
+                      <span>Patient reports past injuries</span>
+                    </label>
+                  </div>
+                  <div class="grid gap-1">
+                    <Label for="past-injuries-details">Injuries details</Label>
+                    <textarea
+                      id="past-injuries-details"
+                      v-model="visitSummaryForm.past_injuries_details"
+                      rows="2"
+                      class="min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                    />
+                  </div>
+                  <div class="grid gap-1">
+                    <Label for="surgery">Surgeries</Label>
+                    <label class="flex items-center gap-2 text-xs">
+                      <input
+                        id="surgery"
+                        v-model="visitSummaryForm.surgery"
+                        type="checkbox"
+                        class="h-3 w-3 border-input text-primary"
+                      />
+                      <span>Patient has had surgery</span>
+                    </label>
+                  </div>
+                  <div class="grid gap-1">
+                    <Label for="surgery-details">Surgery details</Label>
+                    <textarea
+                      id="surgery-details"
+                      v-model="visitSummaryForm.surgery_details"
+                      rows="2"
+                      class="min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                    />
+                  </div>
+                  <div class="grid gap-1">
+                    <Label for="chronic-conditions-details">Chronic conditions details</Label>
+                    <textarea
+                      id="chronic-conditions-details"
+                      v-model="visitSummaryForm.chronic_conditions_details"
+                      rows="2"
+                      class="min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                    />
+                  </div>
+                  <div class="grid gap-1">
+                    <Label for="chronic-pain">Chronic pain</Label>
+                    <label class="flex items-center gap-2 text-xs">
+                      <input
+                        id="chronic-pain"
+                        v-model="visitSummaryForm.chronic_pain"
+                        type="checkbox"
+                        class="h-3 w-3 border-input text-primary"
+                      />
+                      <span>Family history of chronic pain</span>
+                    </label>
+                  </div>
+                  <div class="grid gap-1">
+                    <Label for="chronic-pain-details">Chronic pain details</Label>
+                    <textarea
+                      id="chronic-pain-details"
+                      v-model="visitSummaryForm.chronic_pain_details"
+                      rows="2"
+                      class="min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                    />
+                  </div>
+                  <div class="grid gap-1">
+                    <Label for="family-history-conditions">Family history conditions (one per line)</Label>
+                    <textarea
+                      id="family-history-conditions"
+                      v-model="visitSummaryForm.family_history_conditions_text"
+                      rows="3"
+                      class="min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                    />
+                  </div>
+                  <div class="flex gap-2">
+                    <Button type="submit" size="xs" :disabled="submittingVisitSummary">
+                      <Spinner v-if="submittingVisitSummary" class="mr-1 h-3 w-3" />
+                      <span>{{ submittingVisitSummary ? 'Saving…' : 'Save summary' }}</span>
+                    </Button>
+                    <Button type="button" size="xs" variant="ghost" @click="showVisitSummaryForm = false">
+                      Cancel
+                    </Button>
+                  </div>
+                </form>
               </div>
             </div>
           </div>
