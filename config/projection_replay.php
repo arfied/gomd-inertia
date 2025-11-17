@@ -17,6 +17,10 @@ return [
         'patient.enrolled' => App\Domain\Patient\Events\PatientEnrolled::class,
         'patient.demographics_updated' => App\Domain\Patient\Events\PatientDemographicsUpdated::class,
         'patient.document_uploaded' => App\Domain\Patient\Events\PatientDocumentUploaded::class,
+        'patient.allergy_recorded' => App\Domain\Patient\Events\PatientAllergyRecorded::class,
+        'patient.condition_recorded' => App\Domain\Patient\Events\PatientConditionRecorded::class,
+        'patient.medication_added' => App\Domain\Patient\Events\PatientMedicationAdded::class,
+        'patient.visit_summary_recorded' => App\Domain\Patient\Events\PatientVisitSummaryRecorded::class,
     ],
 
     'projections' => [
@@ -38,6 +42,14 @@ return [
         // Rebuilds the activity log entries related to patient events
         'patient-activity' => [
             'patient.enrolled',
+        ],
+
+        // Rebuilds the medical history projections over legacy tables
+        'patient-medical-history' => [
+            'patient.allergy_recorded',
+            'patient.condition_recorded',
+            'patient.medication_added',
+            'patient.visit_summary_recorded',
         ],
     ],
 ];

@@ -4,6 +4,10 @@ namespace App\Providers;
 
 use App\Application\Commands\CommandBus;
 use App\Application\Patient\Commands\EnrollPatient;
+use App\Application\Patient\Commands\RecordPatientAllergy;
+use App\Application\Patient\Commands\RecordPatientCondition;
+use App\Application\Patient\Commands\RecordPatientMedication;
+use App\Application\Patient\Commands\RecordPatientVisitSummary;
 use App\Application\Patient\Commands\UpdatePatientDemographics;
 use App\Application\Patient\Commands\UploadPatientDocument;
 use App\Application\Patient\EloquentPatientActivityFinder;
@@ -16,9 +20,14 @@ use App\Application\Patient\EloquentPatientEnrollmentFinder;
 use App\Application\Patient\EloquentPatientEnrollmentProjector;
 use App\Application\Patient\EloquentPatientListFinder;
 use App\Application\Patient\EloquentPatientMedicalHistoryFinder;
+use App\Application\Patient\EloquentPatientMedicalHistoryProjector;
 use App\Application\Patient\EloquentPatientSubscriptionFinder;
 use App\Application\Patient\EloquentPatientTimelineFinder;
 use App\Application\Patient\Handlers\EnrollPatientHandler;
+use App\Application\Patient\Handlers\RecordPatientAllergyHandler;
+use App\Application\Patient\Handlers\RecordPatientConditionHandler;
+use App\Application\Patient\Handlers\RecordPatientMedicationHandler;
+use App\Application\Patient\Handlers\RecordPatientVisitSummaryHandler;
 use App\Application\Patient\Handlers\UpdatePatientDemographicsHandler;
 use App\Application\Patient\Handlers\UploadPatientDocumentHandler;
 use App\Application\Patient\PatientActivityFinder;
@@ -31,6 +40,7 @@ use App\Application\Patient\PatientEnrollmentFinder;
 use App\Application\Patient\PatientEnrollmentProjector;
 use App\Application\Patient\PatientListFinder;
 use App\Application\Patient\PatientMedicalHistoryFinder;
+use App\Application\Patient\PatientMedicalHistoryProjector;
 use App\Application\Patient\PatientSubscriptionFinder;
 use App\Application\Patient\PatientTimelineFinder;
 use App\Application\Patient\Queries\GetPatientDemographicsByPatientUuid;
@@ -106,6 +116,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(PatientSubscriptionFinder::class, EloquentPatientSubscriptionFinder::class);
         $this->app->bind(PatientListFinder::class, EloquentPatientListFinder::class);
         $this->app->bind(PatientMedicalHistoryFinder::class, EloquentPatientMedicalHistoryFinder::class);
+        $this->app->bind(PatientMedicalHistoryProjector::class, EloquentPatientMedicalHistoryProjector::class);
     }
 
     /**
@@ -139,6 +150,26 @@ class AppServiceProvider extends ServiceProvider
             $bus->register(
                 UploadPatientDocument::class,
                 $app->make(UploadPatientDocumentHandler::class)
+            );
+
+            $bus->register(
+                RecordPatientAllergy::class,
+                $app->make(RecordPatientAllergyHandler::class)
+            );
+
+            $bus->register(
+                RecordPatientCondition::class,
+                $app->make(RecordPatientConditionHandler::class)
+            );
+
+            $bus->register(
+                RecordPatientMedication::class,
+                $app->make(RecordPatientMedicationHandler::class)
+            );
+
+            $bus->register(
+                RecordPatientVisitSummary::class,
+                $app->make(RecordPatientVisitSummaryHandler::class)
             );
         });
 
