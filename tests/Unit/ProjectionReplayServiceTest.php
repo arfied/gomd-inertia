@@ -4,6 +4,7 @@ namespace Tests\Unit;
 
 use App\Domain\Patient\Events\PatientEnrolled;
 use App\Models\StoredEvent;
+use App\Services\ProjectionRegistry;
 use App\Services\ProjectionReplayOptions;
 use App\Services\ProjectionReplayService;
 use Illuminate\Contracts\Events\Dispatcher;
@@ -77,7 +78,12 @@ class ProjectionReplayServiceTest extends TestCase
             public function forgetPushed(): void {}
         };
 
-        $service = new ProjectionReplayService($fakeDispatcher);
+        $registry = new ProjectionRegistry(
+            eventTypeMap: ['patient.enrolled' => PatientEnrolled::class],
+            projectionMap: ['patient-enrollment' => ['patient.enrolled']],
+        );
+
+        $service = new ProjectionReplayService($fakeDispatcher, $registry);
 
         $result = $service->replay(new ProjectionReplayOptions(aggregateType: 'patient'));
 
@@ -146,7 +152,12 @@ class ProjectionReplayServiceTest extends TestCase
             public function forgetPushed(): void {}
         };
 
-        $service = new ProjectionReplayService($fakeDispatcher);
+        $registry = new ProjectionRegistry(
+            eventTypeMap: ['patient.enrolled' => PatientEnrolled::class],
+            projectionMap: ['patient-enrollment' => ['patient.enrolled']],
+        );
+
+        $service = new ProjectionReplayService($fakeDispatcher, $registry);
 
         $result = $service->replay(new ProjectionReplayOptions(
             aggregateType: 'patient',
