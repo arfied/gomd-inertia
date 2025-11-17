@@ -3,11 +3,13 @@
 namespace App\Providers;
 
 use App\Application\Commands\CommandBus;
+use App\Application\Order\Commands\AssignOrderToDoctor;
 use App\Application\Order\Commands\CancelOrder;
 use App\Application\Order\Commands\CreateOrder;
 use App\Application\Order\Commands\FulfillOrder;
 use App\Application\Order\EloquentOrderProjector;
 use App\Application\Order\EloquentPatientOrderFinder;
+use App\Application\Order\Handlers\AssignOrderToDoctorHandler;
 use App\Application\Order\Handlers\CancelOrderHandler;
 use App\Application\Order\Handlers\CreateOrderHandler;
 use App\Application\Order\Handlers\FulfillOrderHandler;
@@ -160,6 +162,12 @@ class AppServiceProvider extends ServiceProvider
                 CreateOrder::class,
                 $app->make(CreateOrderHandler::class)
             );
+
+            $bus->register(
+                AssignOrderToDoctor::class,
+                $app->make(AssignOrderToDoctorHandler::class)
+            );
+
 
             $bus->register(
                 FulfillOrder::class,
