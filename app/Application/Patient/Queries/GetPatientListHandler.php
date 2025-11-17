@@ -21,7 +21,7 @@ class GetPatientListHandler implements QueryHandler
             throw new InvalidArgumentException('GetPatientListHandler can only handle GetPatientList queries.');
         }
 
-        return $this->finder->paginate($query->search, $query->perPage);
+        return $this->finder->paginate($query->search, $query->perPage, $query->filters);
     }
 }
 

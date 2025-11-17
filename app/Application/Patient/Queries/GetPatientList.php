@@ -9,6 +9,7 @@ class GetPatientList implements Query
     public function __construct(
         public ?string $search = null,
         public int $perPage = 15,
+        public array $filters = [],
     ) {
     }
 }

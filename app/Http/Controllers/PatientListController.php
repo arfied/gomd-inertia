@@ -34,11 +34,18 @@ class PatientListController extends Controller
             $perPage = 15;
         }
 
+        $filters = [
+            'has_documents' => $request->boolean('has_documents'),
+            'has_medical_history' => $request->boolean('has_medical_history'),
+            'has_active_subscription' => $request->boolean('has_active_subscription'),
+        ];
+
         /** @var Paginator $paginator */
         $paginator = $queryBus->ask(
             new GetPatientList(
                 search: $search !== '' ? $search : null,
                 perPage: $perPage,
+                filters: $filters,
             )
         );
 
@@ -51,6 +58,9 @@ class PatientListController extends Controller
                 'email' => $row->email,
                 'status' => $row->status,
                 'enrolled_at' => optional($row->enrolled_at)?->toISOString(),
+                'has_documents' => (int) ($row->documents_count ?? 0) > 0,
+                'has_medical_history' => (int) ($row->medical_history_count ?? 0) > 0,
+                'has_active_subscription' => $row->subscription_status === Subscription::STATUS_ACTIVE,
                 'subscription' => $row->subscription_status !== null ? [
                     'status' => $row->subscription_status,
                     'plan_name' => $row->subscription_plan_name,
@@ -152,9 +162,16 @@ class PatientListController extends Controller
 
         $search = $request->string('search')->toString();
 
+        $filters = [
+            'has_documents' => $request->boolean('has_documents'),
+            'has_medical_history' => $request->boolean('has_medical_history'),
+            'has_active_subscription' => $request->boolean('has_active_subscription'),
+        ];
+
         $count = $queryBus->ask(
             new GetPatientListCount(
                 search: $search !== '' ? $search : null,
+                filters: $filters,
             )
         );
 

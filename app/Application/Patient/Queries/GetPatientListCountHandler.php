@@ -20,7 +20,7 @@ class GetPatientListCountHandler implements QueryHandler
             throw new InvalidArgumentException('GetPatientListCountHandler can only handle GetPatientListCount queries.');
         }
 
-        return $this->finder->count($query->search);
+        return $this->finder->count($query->search, $query->filters);
     }
 }
 

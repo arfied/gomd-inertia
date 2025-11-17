@@ -30,6 +30,9 @@ interface PatientListItem {
     status: string | null
     enrolled_at: string | null
     subscription: PatientSubscriptionSummary | null
+    has_documents: boolean
+    has_medical_history: boolean
+    has_active_subscription: boolean
 }
 
 interface PatientDemographics {
@@ -145,6 +148,10 @@ const listError = ref<string | null>(null)
 
 const search = ref('')
 const perPage = ref(15)
+
+const filterHasDocuments = ref(false)
+const filterHasMedicalHistory = ref(false)
+const filterHasActiveSubscription = ref(false)
 
 const count = ref<number | null>(null)
 const loadingCount = ref(false)
@@ -263,6 +270,9 @@ function buildQuery(base: string): string {
     const params = new URLSearchParams()
     if (search.value.trim() !== '') params.set('search', search.value.trim())
     params.set('per_page', String(perPage.value))
+    if (filterHasDocuments.value) params.set('has_documents', '1')
+    if (filterHasMedicalHistory.value) params.set('has_medical_history', '1')
+    if (filterHasActiveSubscription.value) params.set('has_active_subscription', '1')
     const q = params.toString()
     return q ? `${base}?${q}` : base
 }
@@ -681,10 +691,38 @@ onMounted(() => {
                 </CardHeader>
                 <CardContent class="space-y-4">
                     <div class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-                        <div class="flex flex-1 gap-2">
-                            <Input v-model="search" type="search" placeholder="Search by name or email" class="max-w-xs" />
-                            <Input v-model.number="perPage" type="number" min="1" max="100" class="w-24" />
-                            <Button type="button" size="sm" @click="applyFilters">Apply</Button>
+                        <div class="flex flex-1 flex-col gap-2">
+                            <div class="flex gap-2">
+                                <Input v-model="search" type="search" placeholder="Search by name or email" class="max-w-xs" />
+                                <Input v-model.number="perPage" type="number" min="1" max="100" class="w-24" />
+                                <Button type="button" size="sm" @click="applyFilters">Apply</Button>
+                            </div>
+                            <div class="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                                <label class="inline-flex items-center gap-1">
+                                    <input
+                                        v-model="filterHasDocuments"
+                                        type="checkbox"
+                                        class="h-3 w-3 border-input text-primary"
+                                    />
+                                    <span>Has documents</span>
+                                </label>
+                                <label class="inline-flex items-center gap-1">
+                                    <input
+                                        v-model="filterHasMedicalHistory"
+                                        type="checkbox"
+                                        class="h-3 w-3 border-input text-primary"
+                                    />
+                                    <span>Has medical history</span>
+                                </label>
+                                <label class="inline-flex items-center gap-1">
+                                    <input
+                                        v-model="filterHasActiveSubscription"
+                                        type="checkbox"
+                                        class="h-3 w-3 border-input text-primary"
+                                    />
+                                    <span>Active subscription</span>
+                                </label>
+                            </div>
                         </div>
                         <div class="flex items-center gap-2">
                             <Button type="button" size="sm" variant="outline" :disabled="loadingCount" @click="fetchCount">
@@ -718,7 +756,34 @@ onMounted(() => {
                             </thead>
                             <tbody>
                                 <tr v-for="patient in patients" :key="patient.patient_uuid" class="border-b last:border-b-0">
-                                    <td class="px-3 py-2 font-medium text-foreground">{{ patient.fname }} {{ patient.lname }}</td>
+                                    <td class="px-3 py-2 font-medium text-foreground">
+                                        <div class="flex items-center gap-2">
+                                            <span>{{ patient.fname }} {{ patient.lname }}</span>
+                                            <div class="flex flex-wrap gap-1">
+                                                <Badge
+                                                    v-if="patient.has_documents"
+                                                    variant="outline"
+                                                    class="border-emerald-500/70 bg-emerald-50 text-[10px] uppercase tracking-wide text-emerald-700"
+                                                >
+                                                    Docs
+                                                </Badge>
+                                                <Badge
+                                                    v-if="patient.has_medical_history"
+                                                    variant="outline"
+                                                    class="border-sky-500/70 bg-sky-50 text-[10px] uppercase tracking-wide text-sky-700"
+                                                >
+                                                    History
+                                                </Badge>
+                                                <Badge
+                                                    v-if="patient.has_active_subscription"
+                                                    variant="outline"
+                                                    class="border-indigo-500/70 bg-indigo-50 text-[10px] uppercase tracking-wide text-indigo-700"
+                                                >
+                                                    Active
+                                                </Badge>
+                                            </div>
+                                        </div>
+                                    </td>
                                     <td class="px-3 py-2">{{ patient.email }}</td>
                                     <td class="px-3 py-2">
                                         <Badge :variant="statusBadgeVariant(patient.status)" class="capitalize">
@@ -1002,7 +1067,7 @@ onMounted(() => {
                                 <div class="space-y-2">
                                         <div class="flex items-center justify-between">
                                                 <p class="font-semibold">Allergies</p>
-                                                <Button type="button" size="xs" variant="outline" @click="showAllergyForm = !showAllergyForm">
+                                                <Button type="button" size="sm" variant="outline" @click="showAllergyForm = !showAllergyForm">
                                                         {{ showAllergyForm ? 'Cancel' : 'Add' }}
                                                 </Button>
                                         </div>
@@ -1032,11 +1097,11 @@ onMounted(() => {
                                         />
                                     </div>
                                     <div class="flex gap-2">
-                                        <Button type="submit" size="xs" :disabled="submittingAllergy">
+                                        <Button type="submit" size="sm" :disabled="submittingAllergy">
                                             <Spinner v-if="submittingAllergy" class="mr-1 h-3 w-3" />
                                             <span>{{ submittingAllergy ? 'Saving…' : 'Save allergy' }}</span>
                                         </Button>
-                                        <Button type="button" size="xs" variant="ghost" @click="showAllergyForm = false">
+                                        <Button type="button" size="sm" variant="ghost" @click="showAllergyForm = false">
                                             Cancel
                                         </Button>
                                     </div>
@@ -1058,7 +1123,7 @@ onMounted(() => {
                             <div class="space-y-2">
                                 <div class="flex items-center justify-between">
                                     <p class="font-semibold">Conditions</p>
-                                    <Button type="button" size="xs" variant="outline" @click="showConditionForm = !showConditionForm">
+                                    <Button type="button" size="sm" variant="outline" @click="showConditionForm = !showConditionForm">
                                         {{ showConditionForm ? 'Cancel' : 'Add' }}
                                     </Button>
                                 </div>
@@ -1113,11 +1178,11 @@ onMounted(() => {
                                         />
                                     </div>
                                     <div class="flex gap-2">
-                                        <Button type="submit" size="xs" :disabled="submittingCondition">
+                                        <Button type="submit" size="sm" :disabled="submittingCondition">
                                             <Spinner v-if="submittingCondition" class="mr-1 h-3 w-3" />
                                             <span>{{ submittingCondition ? 'Saving…' : 'Save condition' }}</span>
                                         </Button>
-                                        <Button type="button" size="xs" variant="ghost" @click="showConditionForm = false">
+                                        <Button type="button" size="sm" variant="ghost" @click="showConditionForm = false">
                                             Cancel
                                         </Button>
                                     </div>
@@ -1137,7 +1202,7 @@ onMounted(() => {
                             <div class="space-y-2">
                                 <div class="flex items-center justify-between">
                                     <p class="font-semibold">Medications</p>
-                                    <Button type="button" size="xs" variant="outline" @click="showMedicationForm = !showMedicationForm">
+                                    <Button type="button" size="sm" variant="outline" @click="showMedicationForm = !showMedicationForm">
                                         {{ showMedicationForm ? 'Cancel' : 'Add' }}
                                     </Button>
                                 </div>
@@ -1206,11 +1271,11 @@ onMounted(() => {
                                         />
                                     </div>
                                     <div class="flex gap-2">
-                                        <Button type="submit" size="xs" :disabled="submittingMedication">
+                                        <Button type="submit" size="sm" :disabled="submittingMedication">
                                             <Spinner v-if="submittingMedication" class="mr-1 h-3 w-3" />
                                             <span>{{ submittingMedication ? 'Saving…' : 'Save medication' }}</span>
                                         </Button>
-                                        <Button type="button" size="xs" variant="ghost" @click="showMedicationForm = false">
+                                        <Button type="button" size="sm" variant="ghost" @click="showMedicationForm = false">
                                             Cancel
                                         </Button>
                                     </div>
@@ -1235,7 +1300,7 @@ onMounted(() => {
                             <div class="space-y-2">
                                 <div class="flex items-center justify-between">
                                     <p class="font-semibold">Visit summary</p>
-                                    <Button type="button" size="xs" variant="outline" @click="showVisitSummaryForm = !showVisitSummaryForm">
+                                    <Button type="button" size="sm" variant="outline" @click="showVisitSummaryForm = !showVisitSummaryForm">
                                         {{ showVisitSummaryForm ? 'Cancel' : 'Edit summary' }}
                                     </Button>
                                 </div>
@@ -1365,11 +1430,11 @@ onMounted(() => {
                                         />
                                     </div>
                                     <div class="flex gap-2">
-                                        <Button type="submit" size="xs" :disabled="submittingVisitSummary">
+                                        <Button type="submit" size="sm" :disabled="submittingVisitSummary">
                                             <Spinner v-if="submittingVisitSummary" class="mr-1 h-3 w-3" />
                                             <span>{{ submittingVisitSummary ? 'Saving…' : 'Save summary' }}</span>
                                         </Button>
-                                        <Button type="button" size="xs" variant="ghost" @click="showVisitSummaryForm = false">
+                                        <Button type="button" size="sm" variant="ghost" @click="showVisitSummaryForm = false">
                                             Cancel
                                         </Button>
                                     </div>

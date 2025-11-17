@@ -8,6 +8,7 @@ class GetPatientListCount implements Query
 {
     public function __construct(
         public ?string $search = null,
+        public array $filters = [],
     ) {
     }
 }
