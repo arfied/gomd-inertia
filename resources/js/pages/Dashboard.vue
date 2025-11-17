@@ -10,6 +10,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
+import {
+    Dialog,
+    DialogClose,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from '@/components/ui/dialog';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -144,6 +154,19 @@ const startingEnrollment = ref(false);
 const subscription = ref<PatientSubscription | null>(null);
 const loadingSubscription = ref(true);
 const subscriptionError = ref<string | null>(null);
+const cancellingSubscription = ref(false);
+const cancelSubscriptionError = ref<string | null>(null);
+
+const canCancelSubscription = computed(() => {
+    if (!subscription.value) {
+        return false;
+    }
+
+    return (
+        subscription.value.status === 'active' ||
+        subscription.value.status === 'pending_payment'
+    );
+});
 
 const documents = ref<PatientDocument[]>([]);
 const loadingDocuments = ref(true);
@@ -776,6 +799,46 @@ async function loadSubscription() {
     }
 }
 
+async function cancelSubscription() {
+    if (!subscription.value || cancellingSubscription.value) {
+        return;
+    }
+
+    cancellingSubscription.value = true;
+    cancelSubscriptionError.value = null;
+
+    try {
+        const xsrfToken = getXsrfToken();
+
+        const response = await fetch('/patient/subscription/cancel', {
+            method: 'POST',
+            headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/json',
+                ...(xsrfToken ? { 'X-XSRF-TOKEN': xsrfToken } : {}),
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify({}),
+        });
+
+        if (!response.ok) {
+            cancelSubscriptionError.value = `Failed to cancel subscription (${response.status})`;
+            return;
+        }
+
+        const data = (await response.json()) as {
+            subscription: PatientSubscription | null;
+        };
+
+        subscription.value = data.subscription ?? null;
+    } catch {
+        cancelSubscriptionError.value =
+            'A network error occurred while cancelling your subscription.';
+    } finally {
+        cancellingSubscription.value = false;
+    }
+}
+
 async function loadRecentActivity() {
     try {
         const response = await fetch('/patient/activity/recent', {
@@ -970,8 +1033,71 @@ onMounted(() => {
                                     Since {{ formatActivityTimestamp(subscription.starts_at) }}
                                 </span>
                             </p>
+                            <p v-if="cancelSubscriptionError" class="text-xs text-destructive">
+                                {{ cancelSubscriptionError }}
+                            </p>
                         </div>
                     </CardContent>
+                    <CardFooter v-if="subscription && canCancelSubscription">
+                        <Dialog>
+                            <DialogTrigger as-child>
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="outline"
+                                    :disabled="cancellingSubscription"
+                                >
+                                    <Spinner
+                                        v-if="cancellingSubscription"
+                                        class="mr-2 h-4 w-4"
+                                    />
+                                    <span v-if="cancellingSubscription">
+                                        Cancelling…
+                                    </span>
+                                    <span v-else>
+                                        Cancel subscription
+                                    </span>
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                                <DialogHeader>
+                                    <DialogTitle>Cancel subscription</DialogTitle>
+                                    <DialogDescription>
+                                        This will cancel your current TeleMed Pro subscription. You may lose access at the end of your current billing period depending on your plan.
+                                    </DialogDescription>
+                                </DialogHeader>
+                                <DialogFooter>
+                                    <DialogClose as-child>
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                        >
+                                            Keep subscription
+                                        </Button>
+                                    </DialogClose>
+                                    <DialogClose as-child>
+                                        <Button
+                                            type="button"
+                                            variant="destructive"
+                                            :disabled="cancellingSubscription"
+                                            @click="cancelSubscription"
+                                        >
+                                            <Spinner
+                                                v-if="cancellingSubscription"
+                                                class="mr-2 h-4 w-4"
+                                            />
+                                            <span v-if="cancellingSubscription">
+                                                Cancelling…
+                                            </span>
+                                            <span v-else>
+                                                Confirm cancel
+                                            </span>
+                                        </Button>
+                                    </DialogClose>
+                                </DialogFooter>
+                            </DialogContent>
+                        </Dialog>
+                    </CardFooter>
                 </Card>
 
                 <Card>

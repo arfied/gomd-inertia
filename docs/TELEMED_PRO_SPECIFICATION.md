@@ -1811,12 +1811,17 @@ const customPreset = {
 - [x] `patient_enrollments` projection and finder APIs.
 - [x] Patient enrollment endpoints (`GET/POST /patient/enrollment`).
 - [x] Patient dashboard cards: enrollment, recent activity, events timeline, subscription status.
-- [ ] Patient demographics aggregate (`UpdateDemographics` command, `DemographicsUpdated` events).
-- [ ] Patient document upload flow (`DocumentUploaded` events, projections, UI).
-- [ ] Medical history tracking (events, read models, dashboard/clinical UI).
-- [ ] Patient list and detail read models (`PatientListView`, `PatientDetailView`) for staff/admin.
+- [x] Patient demographics aggregate (`UpdateDemographics` command, `DemographicsUpdated` events) projecting into existing `users` table.
+- [x] Patient document upload flow (`DocumentUploaded` events, projections, UI) reusing legacy document/record tables.
+- [x] Medical history tracking (events, read models, patient and staff dashboard/clinical UI).
+- [x] Patient list and detail read models (`PatientListView`, `PatientDetailView`) for staff/admin, backed by existing tables with simple pagination and separate count endpoints.
+- [ ] (Minor) Refine patient subscription cancel dialog copy to show explicit end date / plan details when available.
+- [ ] (Minor) Show “Cancelled on … / Ends on …” badges on the patient subscription card based on subscription status.
 
 ### 3. Order Management & Medication Catalog
+
+> **Medication data note:** The legacy system exposed medications through two table groups (`medications` and `medication_bases` plus related tables). For all new Order Management & Medication Catalog work, treat the `medications` table as the single source of truth and do not depend on `medication_bases` or its related tables.
+
 
 - [ ] Order aggregate (`CreateOrder`, `FulfillOrder`, `CancelOrder`) and events.
 - [ ] Order fulfillment saga wired through event store and queues.
@@ -1835,10 +1840,13 @@ const customPreset = {
 ### 5. Payment & Subscriptions
 
 - [x] Read-side subscription status query and patient dashboard subscription card.
+- [x] Patient-facing subscription cancel endpoint and dashboard cancel control (simple status update prior to full event-sourced subscription model).
 - [ ] Event-sourced subscription aggregate and `SubscriptionRenewed` events.
 - [ ] Payment method management and `PaymentMethodAdded` events.
 - [ ] Payment processing and dunning management sagas.
 - [ ] Revenue and subscription analytics (MRR, churn, LTV dashboards).
+- [ ] (Minor) Refine patient subscription cancel dialog copy to show explicit end date / plan details when available.
+- [ ] (Minor) Show "Cancelled on … / Ends on …" badges on subscription cards based on subscription status (patient and, later, staff views).
 
 ### 6. Clinical & Compliance
 

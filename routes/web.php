@@ -8,8 +8,10 @@ use App\Http\Controllers\PatientDemographicsController;
 use App\Http\Controllers\PatientDocumentsController;
 use App\Http\Controllers\PatientListController;
 use App\Http\Controllers\PatientMedicalHistoryController;
+use App\Http\Controllers\PatientOrdersController;
 use App\Http\Controllers\PatientSelfMedicalHistoryController;
 use App\Http\Controllers\StaffPatientDocumentsController;
+use App\Http\Controllers\StaffPatientOrdersController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
@@ -53,8 +55,15 @@ Route::middleware('auth')->group(function () {
     Route::post('patient/documents', [PatientDocumentsController::class, 'store'])
         ->name('patient.documents.store');
 
+    Route::get('patient/orders', [PatientOrdersController::class, 'index'])
+        ->name('patient.orders.index');
+
+
     Route::get('patient/subscription', [PatientSubscriptionController::class, 'show'])
         ->name('patient.subscription.show');
+
+    Route::post('patient/subscription/cancel', [PatientSubscriptionController::class, 'cancel'])
+        ->name('patient.subscription.cancel');
 
     Route::get('patient/activity/recent', [PatientActivityController::class, 'index'])
         ->name('patient.activity.recent');
@@ -88,6 +97,9 @@ Route::middleware('auth')->group(function () {
 
     Route::get('patients/{patientUuid}/documents', [StaffPatientDocumentsController::class, 'index'])
         ->name('patients.documents.index');
+
+    Route::get('patients/{patientUuid}/orders', [StaffPatientOrdersController::class, 'index'])
+        ->name('patients.orders.index');
 
     Route::post('patients/{patientUuid}/documents', [StaffPatientDocumentsController::class, 'store'])
         ->name('patients.documents.store');

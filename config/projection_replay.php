@@ -21,6 +21,7 @@ return [
         'patient.condition_recorded' => App\Domain\Patient\Events\PatientConditionRecorded::class,
         'patient.medication_added' => App\Domain\Patient\Events\PatientMedicationAdded::class,
         'patient.visit_summary_recorded' => App\Domain\Patient\Events\PatientVisitSummaryRecorded::class,
+        'order.created' => App\Domain\Order\Events\OrderCreated::class,
     ],
 
     'projections' => [
@@ -50,6 +51,11 @@ return [
             'patient.condition_recorded',
             'patient.medication_added',
             'patient.visit_summary_recorded',
+        ],
+
+        // Rebuilds the medication orders projection over legacy medication_orders
+        'order' => [
+            'order.created',
         ],
     ],
 ];
