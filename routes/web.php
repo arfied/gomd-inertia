@@ -5,6 +5,7 @@ use App\Http\Controllers\PatientActivityController;
 use App\Http\Controllers\PatientSubscriptionController;
 use App\Http\Controllers\PatientTimelineController;
 use App\Http\Controllers\PatientDemographicsController;
+use App\Http\Controllers\PatientDocumentsController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
@@ -31,6 +32,12 @@ Route::middleware('auth')->group(function () {
 
     Route::put('patient/demographics', [PatientDemographicsController::class, 'update'])
         ->name('patient.demographics.update');
+
+    Route::get('patient/documents', [PatientDocumentsController::class, 'index'])
+        ->name('patient.documents.index');
+
+    Route::post('patient/documents', [PatientDocumentsController::class, 'store'])
+        ->name('patient.documents.store');
 
     Route::get('patient/subscription', [PatientSubscriptionController::class, 'show'])
         ->name('patient.subscription.show');

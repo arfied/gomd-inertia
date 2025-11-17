@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\PatientEnrollment;
+use App\Models\MedicalRecord;
 use App\Models\StoredEvent;
 use App\Models\User;
 use Illuminate\Support\Facades\Artisan;
@@ -107,5 +108,47 @@ test('projections:replay rebuilds patient demographics projection from event sto
     expect($user->fname)->toBe('Replay');
     expect($user->lname)->toBe('Patient');
     expect($user->gender)->toBe('F');
+});
+
+
+
+test('projections:replay rebuilds patient documents projection from event store', function () {
+    if (! extension_loaded('pdo_sqlite')) {
+        $this->markTestSkipped('pdo_sqlite extension is required for this test.');
+    }
+
+    $user = User::factory()->create();
+
+    $patientUuid = 'patient-uuid-replay-documents';
+
+    MedicalRecord::query()->delete();
+
+    StoredEvent::create([
+        'aggregate_uuid' => $patientUuid,
+        'aggregate_type' => 'patient',
+        'event_type' => 'patient.document_uploaded',
+        'event_data' => [
+            'patient_id' => $user->id,
+            'record_type' => 'lab_result',
+            'description' => 'Replay document',
+            'record_date' => '2024-05-01',
+            'file_path' => 'patient-documents/'.$user->id.'/replay.pdf',
+        ],
+        'metadata' => ['source' => 'replay-test'],
+        'occurred_at' => now(),
+    ]);
+
+    Artisan::call('projections:replay', [
+        '--projection' => 'patient-documents',
+        '--aggregate-type' => 'patient',
+    ]);
+
+    assertDatabaseHas('medical_records', [
+        'patient_id' => $user->id,
+        'record_type' => 'lab_result',
+        'description' => 'Replay document',
+        'record_date' => '2024-05-01 00:00:00',
+        'file_path' => 'patient-documents/'.$user->id.'/replay.pdf',
+    ]);
 });
 

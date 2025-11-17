@@ -16,6 +16,7 @@ return [
         // Domain events for the patient aggregate
         'patient.enrolled' => App\Domain\Patient\Events\PatientEnrolled::class,
         'patient.demographics_updated' => App\Domain\Patient\Events\PatientDemographicsUpdated::class,
+        'patient.document_uploaded' => App\Domain\Patient\Events\PatientDocumentUploaded::class,
     ],
 
     'projections' => [
@@ -27,6 +28,11 @@ return [
         // Rebuilds the patient demographics on the users table
         'patient-demographics' => [
             'patient.demographics_updated',
+        ],
+
+        // Rebuilds the patient documents projection over medical_records
+        'patient-documents' => [
+            'patient.document_uploaded',
         ],
 
         // Rebuilds the activity log entries related to patient events
