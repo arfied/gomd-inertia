@@ -3,40 +3,16 @@
 namespace App\Services;
 
 use App\Domain\Events\DomainEvent;
-use App\Domain\Patient\Events\PatientEnrolled;
 use App\Models\StoredEvent;
 use Illuminate\Contracts\Events\Dispatcher;
 
 class ProjectionReplayService
 {
-    /**
-     * Map of logical event_type strings to concrete DomainEvent classes.
-     *
-     * @var array<string, class-string<DomainEvent>>
-     */
-    private array $eventTypeMap;
-
-    /**
-     * Map of projection names to the event types they care about.
-     *
-     * @var array<string, array<int, string>>
-     */
-    private array $projectionEventTypeMap;
-
     public function __construct(
         private Dispatcher $dispatcher,
-        ?array $eventTypeMap = null,
-        ?array $projectionEventTypeMap = null,
+        private ProjectionRegistry $registry,
         private int $defaultBatchSize = 100,
     ) {
-        $this->eventTypeMap = $eventTypeMap ?? (array) config('projection_replay.event_types', [
-            'patient.enrolled' => PatientEnrolled::class,
-        ]);
-
-        $this->projectionEventTypeMap = $projectionEventTypeMap ?? (array) config('projection_replay.projections', [
-            'patient-enrollment' => ['patient.enrolled'],
-            'patient-activity' => ['patient.enrolled'],
-        ]);
     }
 
     /**
@@ -65,9 +41,9 @@ class ProjectionReplayService
         }
 
         if ($options->projection !== null) {
-            $eventTypes = $this->projectionEventTypeMap[$options->projection] ?? null;
+            $eventTypes = $this->registry->eventTypesForProjection($options->projection);
 
-            if ($eventTypes === null) {
+            if ($eventTypes === []) {
                 throw new \InvalidArgumentException("Unknown projection [{$options->projection}]");
             }
 
@@ -117,12 +93,12 @@ class ProjectionReplayService
      */
     public function knownProjections(): array
     {
-        return array_keys($this->projectionEventTypeMap);
+        return $this->registry->projectionNames();
     }
 
     private function rehydrateDomainEvent(StoredEvent $storedEvent): ?DomainEvent
     {
-        $class = $this->eventTypeMap[$storedEvent->event_type] ?? null;
+        $class = $this->registry->eventClassFor($storedEvent->event_type);
 
         if ($class === null || ! is_subclass_of($class, DomainEvent::class)) {
             return null;
