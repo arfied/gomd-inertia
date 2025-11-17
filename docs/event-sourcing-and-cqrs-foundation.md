@@ -500,3 +500,102 @@ The test uses `RefreshDatabase` so migrations run on the test connection (`sqlit
 default via `phpunit.xml`). On environments where the `pdo_sqlite` extension is not available, the
 test marks itself as skipped instead of failing; on a properly configured test environment, it runs
 as a true end-to-end check of the registration → command → event store → projection → query flow.
+
+
+## Projection replay tooling
+
+As the system grows, read models and projections will evolve. When code for a projector changes or
+new projections are introduced, it is often necessary to **rebuild projections from the historical
+event stream**. TeleMed Pro provides generic, reusable tooling to do this safely:
+
+- A `ProjectionReplayService` that can read events from the `event_store` table in batches,
+  reconstitute them into `DomainEvent` instances, and dispatch them through Laravel's event bus as
+  if they had just happened.
+- A small value object, `ProjectionReplayOptions`, describing the parameters of a replay run
+  (projection name, aggregate type, ID range, dry run flag, batch size).
+- A result object, `ProjectionReplayResult`, reporting how many batches and events were processed
+  and how many domain events were actually dispatched.
+- An Artisan command, `php artisan projections:replay`, that wraps the service with a CLI-friendly
+  interface.
+
+### Service behaviour
+
+The `ProjectionReplayService` lives at `App\\Services\\ProjectionReplayService` and is registered as a
+singleton in the container. It depends on Laravel's `Dispatcher` contract and keeps two maps:
+The default event and projection maps are defined in `config/projection_replay.php` and can be extended as new aggregates and projections are added.
+
+
+
+- **Event type map**: maps logical `event_type` strings (from the `event_store` table) to concrete
+  `DomainEvent` classes. For example, `patient.enrolled` is mapped to
+  `App\\Domain\\Patient\\Events\\PatientEnrolled`.
+- **Projection event map**: maps logical projection names to the event types they care about, e.g.:
+  - `patient-enrollment`  `['patient.enrolled']`
+  - `patient-activity`  `['patient.enrolled']`
+
+During a replay run, the service:
+
+1. Builds an Eloquent query over `App\\Models\\StoredEvent` ordered by `id`.
+2. Applies optional filters from `ProjectionReplayOptions`:
+   - `aggregateType`  `WHERE aggregate_type = ...`
+   - `fromId` / `toId`  `WHERE id BETWEEN ...`
+   - `projection`  `WHERE event_type IN (...)` based on the projection's event map.
+3. Streams results in batches using `chunkById` (default batch size: 100).
+4. For each `StoredEvent`, looks up the corresponding `DomainEvent` class, rehydrates it using the
+   stored `aggregate_uuid`, `event_data`, `metadata`, and `occurred_at` (converted back to a
+   `DateTimeImmutable`), and either:
+   - In **dry-run** mode: logs what would be dispatched, without touching any projections.
+   - In **normal** mode: dispatches the domain event via Laravel's event dispatcher, letting the
+     existing projectors and listeners react as they do for live events.
+5. Tracks batches processed, events processed, and events dispatched in a `ProjectionReplayResult`
+   instance.
+
+Unknown event types (those not present in the event type map) are safely skipped and reported via the
+optional `$output` callback.
+
+### Artisan command: `projections:replay`
+
+The CLI entry point is defined in `routes/console.php` as:
+
+- Command: `projections:replay`
+- Options:
+  - `--projection=` (optional)  logical projection name, e.g. `patient-enrollment` or
+    `patient-activity`. If provided, the service restricts the replay to the relevant event types.
+  - `--aggregate-type=` (optional)  logical aggregate type string (e.g. `patient`) to further scope
+    the replay.
+  - `--from-id=` / `--to-id=` (optional)  inclusive ID range within the `event_store` table.
+  - `--dry-run` (flag)  perform a no-op replay, logging which domain events would be dispatched
+    without updating any projections.
+
+The command resolves `ProjectionReplayService` from the container, validates the `--projection`
+argument against `ProjectionReplayService::knownProjections()`, constructs a `ProjectionReplayOptions`
+instance, and invokes `replay()`. At the end of the run it prints a small summary:
+
+- Number of batches processed.
+- Number of events processed.
+- Number of domain events dispatched (0 in dry-run mode).
+
+Because the replay is implemented in terms of Laravel's event dispatcher and the existing
+projectors, it is fully **idempotent** as long as projectors are idempotent. The existing
+Eloquent-based projectors (such as `EloquentPatientEnrollmentProjector`) use patterns like
+`updateOrCreate`, which makes repeated replays safe.
+
+### Example: rebuilding patient enrollment projections
+
+To rebuild patient enrollment projections for all patient events in the system:
+
+```bash
+php artisan projections:replay --projection=patient-enrollment --aggregate-type=patient
+```
+
+If you only want to inspect what would happen without actually touching the `patient_enrollments`
+read model:
+
+```bash
+php artisan projections:replay --projection=patient-enrollment --aggregate-type=patient --dry-run
+```
+
+The feature test `tests/Feature/ProjectionReplayCommandTest.php` seeds a `patient.enrolled` event in
+the `event_store` table, truncates the `patient_enrollments` table, invokes the replay command, and
+asserts that the enrollment projection is rebuilt correctly. A second test covers the `--dry-run`
+behaviour and asserts that no projections are created in that mode.

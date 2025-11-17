@@ -1778,6 +1778,80 @@ const customPreset = {
 - Video tutorials
 - Launch preparation
 
+## System Implementation Task List
+
+> This checklist summarizes the major implementation work across the platform.
+> It mirrors the "Implementation Roadmap" and DDD bounded contexts, and tracks
+> current progress at a high level.
+
+### 1. Foundation & Infrastructure
+
+- [x] MySQL event store schema with JSON columns and indexes.
+- [x] Core event-sourcing primitives (`DomainEvent`, `EventStore`, `AggregateRoot`).
+- [x] CQRS infrastructure (`CommandBus`, `QueryBus`, handler interfaces).
+- [x] Laravel event publication pattern from stored events to projectors.
+- [x] First projections and read-model pattern (patient enrollment).
+- [x] Generic projection replay tooling for rebuilding read models from the event store.
+- [ ] Monitoring/observability for event store and queues (metrics, logs, alerts).
+
+### 2. Patient Management
+
+- [x] `PatientEnrolled` domain event, enrollment command handler, and aggregate.
+- [x] `patient_enrollments` projection and finder APIs.
+- [x] Patient enrollment endpoints (`GET/POST /patient/enrollment`).
+- [x] Patient dashboard cards: enrollment, recent activity, events timeline, subscription status.
+- [ ] Patient demographics aggregate (`UpdateDemographics` command, `DemographicsUpdated` events).
+- [ ] Patient document upload flow (`DocumentUploaded` events, projections, UI).
+- [ ] Medical history tracking (events, read models, dashboard/clinical UI).
+- [ ] Patient list and detail read models (`PatientListView`, `PatientDetailView`) for staff/admin.
+
+### 3. Order Management & Medication Catalog
+
+- [ ] Order aggregate (`CreateOrder`, `FulfillOrder`, `CancelOrder`) and events.
+- [ ] Order fulfillment saga wired through event store and queues.
+- [ ] Medication catalog aggregates (`Medication`, `Condition`, `Formulary`) and events.
+- [ ] Medication search and formulary read models.
+- [ ] Patient order history timeline on patient and staff dashboards.
+
+### 4. Commission & Referral Network
+
+- [ ] Commission aggregates, events, and calculation engine.
+- [ ] Hierarchical commission cascade through referral hierarchy.
+- [ ] Commission dashboard read models and UI.
+- [ ] Agent/LOA onboarding flow and events.
+- [ ] Referral link generation, tracking, and network visualization.
+
+### 5. Payment & Subscriptions
+
+- [x] Read-side subscription status query and patient dashboard subscription card.
+- [ ] Event-sourced subscription aggregate and `SubscriptionRenewed` events.
+- [ ] Payment method management and `PaymentMethodAdded` events.
+- [ ] Payment processing and dunning management sagas.
+- [ ] Revenue and subscription analytics (MRR, churn, LTV dashboards).
+
+### 6. Clinical & Compliance
+
+- [ ] Questionnaire, clinical note, and consultation aggregates and events.
+- [ ] Adaptive questionnaire engine and read models.
+- [ ] Consent, audit log, and license aggregates (`ConsentGranted`, `AccessLogged`, `LicenseVerified`).
+- [ ] Compliance automation (audit trail UI, HIPAA checks, regulatory reporting).
+
+### 7. Real-Time, Omnichannel & Analytics
+
+- [ ] Laravel Reverb WebSocket + SSE fallback for live dashboards and patient views.
+- [ ] Presence, collaborative notes, and real-time chat in patient context.
+- [ ] Unified conversation thread across SMS, email, and in-app messaging.
+- [ ] Notification dispatcher for event-driven alerts and reminders.
+- [ ] Analytics engine: real-time dashboards, event-based metrics, predictive models.
+
+### 8. Testing, Documentation & Launch
+
+- [x] Unit and feature tests for patient enrollment, dashboard read models, and subscription status.
+- [ ] Unit and integration tests for all new aggregates, sagas, and read models.
+- [x] Event-sourcing and CQRS foundation documentation.
+- [ ] Comprehensive user and developer documentation (including component library).
+- [ ] Performance, security, and launch-readiness checks for cPanel deployment.
+
 ---
 
 ## cPanel-Specific Optimizations
