@@ -30,9 +30,12 @@ use App\Application\Patient\Queries\GetRecentPatientActivityByUserIdHandler;
 use App\Application\Queries\QueryBus;
 use App\Services\EventStore;
 use App\Services\EventStoreContract;
+use App\Services\EventStoreMonitor;
 use App\Services\ProjectionRegistry;
 use App\Services\ProjectionReplayService;
+use App\Services\QueueMonitor;
 use Illuminate\Contracts\Events\Dispatcher;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -42,13 +45,15 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->app->singleton(EventStore::class, fn () => new EventStore());
+        $this->app->singleton(EventStoreMonitor::class, fn () => new EventStoreMonitor());
+        $this->app->singleton(EventStore::class, fn ($app) => new EventStore($app->make(EventStoreMonitor::class)));
         $this->app->alias(EventStore::class, EventStoreContract::class);
 
         $this->app->singleton(CommandBus::class, fn () => new CommandBus());
         $this->app->singleton(QueryBus::class, fn () => new QueryBus());
 
         $this->app->singleton(ProjectionRegistry::class, fn () => new ProjectionRegistry());
+        $this->app->singleton(QueueMonitor::class, fn () => new QueueMonitor());
 
         $this->app->singleton(ProjectionReplayService::class, function ($app): ProjectionReplayService {
             return new ProjectionReplayService(
@@ -72,6 +77,18 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        $queueMonitor = $this->app->make(QueueMonitor::class);
+
+        Queue::after(function ($event) use ($queueMonitor): void {
+            if ($event instanceof \Illuminate\Queue\Events\JobProcessed) {
+                $queueMonitor->recordProcessed($event);
+            }
+        });
+
+        Queue::failing(function (\Illuminate\Queue\Events\JobFailed $event) use ($queueMonitor): void {
+            $queueMonitor->recordFailed($event);
+        });
+
         $this->app->resolving(CommandBus::class, function (CommandBus $bus, $app) {
             $bus->register(
                 EnrollPatient::class,

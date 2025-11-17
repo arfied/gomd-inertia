@@ -7,12 +7,22 @@ use App\Models\StoredEvent;
 
 class EventStore implements EventStoreContract
 {
+    public function __construct(private ?EventStoreMonitor $monitor = null)
+    {
+    }
+
     /**
      * Persist a domain event and return the stored record.
      */
     public function store(DomainEvent $event): StoredEvent
     {
-        return StoredEvent::create($event->toStoredEventAttributes());
+        $stored = StoredEvent::create($event->toStoredEventAttributes());
+
+        if ($this->monitor !== null) {
+            $this->monitor->recordStored($event, $stored);
+        }
+
+        return $stored;
     }
 }
 
