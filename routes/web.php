@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\PatientEnrollmentController;
 use App\Http\Controllers\PatientActivityController;
+use App\Http\Controllers\PatientSubscriptionController;
 use App\Http\Controllers\PatientTimelineController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -23,6 +24,9 @@ Route::middleware('auth')->group(function () {
 
     Route::post('patient/enrollment', [PatientEnrollmentController::class, 'store'])
         ->name('patient.enrollment.store');
+
+    Route::get('patient/subscription', [PatientSubscriptionController::class, 'show'])
+        ->name('patient.subscription.show');
 
     Route::get('patient/activity/recent', [PatientActivityController::class, 'index'])
         ->name('patient.activity.recent');

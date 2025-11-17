@@ -24,6 +24,15 @@ interface PatientEnrollment {
     enrolled_at: string | null;
 }
 
+interface PatientSubscription {
+    id: number;
+    status: string;
+    plan_name: string | null;
+    is_trial: boolean;
+    starts_at: string | null;
+    ends_at: string | null;
+}
+
 interface RecentActivityEntry {
     id: number;
     type: string;
@@ -116,6 +125,10 @@ const enrollment = ref<PatientEnrollment | null>(null);
 const loadingEnrollment = ref(true);
 const enrollmentError = ref<string | null>(null);
 const startingEnrollment = ref(false);
+
+const subscription = ref<PatientSubscription | null>(null);
+const loadingSubscription = ref(true);
+const subscriptionError = ref<string | null>(null);
 
 const recentActivity = ref<RecentActivityEntry[]>([]);
 const loadingRecentActivity = ref(true);
@@ -241,6 +254,33 @@ async function loadEnrollment() {
     }
 }
 
+async function loadSubscription() {
+    try {
+        const response = await fetch('/patient/subscription', {
+            headers: {
+                Accept: 'application/json',
+            },
+            credentials: 'same-origin',
+        });
+
+        if (!response.ok) {
+            subscriptionError.value = `Failed to load subscription (${response.status})`;
+            return;
+        }
+
+        const data = (await response.json()) as {
+            subscription: PatientSubscription | null;
+        };
+
+        subscription.value = data.subscription ?? null;
+    } catch {
+        subscriptionError.value =
+            'A network error occurred while loading your subscription.';
+    } finally {
+        loadingSubscription.value = false;
+    }
+}
+
 async function loadRecentActivity() {
     try {
         const response = await fetch('/patient/activity/recent', {
@@ -317,6 +357,7 @@ async function reloadTimelineForCurrentFilter() {
 
 onMounted(() => {
     void loadEnrollment();
+    void loadSubscription();
     void loadRecentActivity();
     void reloadTimelineForCurrentFilter();
 });
@@ -378,6 +419,62 @@ onMounted(() => {
                             </span>
                         </Button>
                     </CardFooter>
+                </Card>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Subscription</CardTitle>
+                        <CardDescription>
+                            A quick view of your current TeleMed Pro subscription.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent class="space-y-2 text-sm text-muted-foreground">
+                        <div
+                            v-if="loadingSubscription"
+                            class="flex items-center space-x-2"
+                        >
+                            <Spinner class="h-4 w-4" />
+                            <span>Loading subscription…</span>
+                        </div>
+                        <p v-else-if="subscriptionError">
+                            {{ subscriptionError }}
+                        </p>
+                        <p v-else-if="!subscription">
+                            You don't have an active subscription yet.
+                        </p>
+                        <div v-else class="space-y-1">
+                            <p>
+                                <span class="font-medium text-foreground">
+                                    {{ subscription.plan_name || 'TeleMed Pro plan' }}
+                                </span>
+                                <span v-if="subscription.is_trial" class="ml-1">
+                                    (trial)
+                                </span>
+                            </p>
+                            <p class="text-xs">
+                                Status:
+                                <span class="capitalize">
+                                    {{ subscription.status.replace('_', ' ') }}
+                                </span>
+                            </p>
+                            <p
+                                v-if="subscription.starts_at || subscription.ends_at"
+                                class="text-xs"
+                            >
+                                <span v-if="subscription.starts_at && subscription.ends_at">
+                                    {{ formatActivityTimestamp(subscription.starts_at) }}
+                                    –
+                                    {{ formatActivityTimestamp(subscription.ends_at) }}
+                                </span>
+                                <span v-else-if="subscription.ends_at">
+                                    Through {{ formatActivityTimestamp(subscription.ends_at) }}
+                                </span>
+                                <span v-else>
+                                    Since {{ formatActivityTimestamp(subscription.starts_at) }}
+                                </span>
+                            </p>
+                        </div>
+                    </CardContent>
                 </Card>
 
                 <Card>
@@ -464,13 +561,6 @@ onMounted(() => {
                         >
                             {{ timelineError }}
                         </p>
-                        <p
-                            v-else-if="!timelineEvents.length"
-                            class="text-sm text-muted-foreground"
-                        >
-                            No events yet. As your care journey progresses, events will
-                            show up here in order.
-                        </p>
                         <div
                             v-else
                             class="flex flex-col gap-3 text-sm"
@@ -519,7 +609,14 @@ onMounted(() => {
                             </div>
 
                             <p
-                                v-if="filteredTimelineEvents.length === 0"
+                                v-if="!filteredTimelineEvents.length && selectedTimelineFilter === 'all'"
+                                class="text-sm text-muted-foreground"
+                            >
+                                No events yet. As your care journey progresses, events will
+                                show up here in order.
+                            </p>
+                            <p
+                                v-else-if="!filteredTimelineEvents.length"
                                 class="text-sm text-muted-foreground"
                             >
                                 No events match this filter yet.
