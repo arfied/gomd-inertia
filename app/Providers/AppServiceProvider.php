@@ -3,6 +3,20 @@
 namespace App\Providers;
 
 use App\Application\Commands\CommandBus;
+use App\Application\Order\Commands\CancelOrder;
+use App\Application\Order\Commands\CreateOrder;
+use App\Application\Order\Commands\FulfillOrder;
+use App\Application\Order\EloquentOrderProjector;
+use App\Application\Order\EloquentPatientOrderFinder;
+use App\Application\Order\Handlers\CancelOrderHandler;
+use App\Application\Order\Handlers\CreateOrderHandler;
+use App\Application\Order\Handlers\FulfillOrderHandler;
+use App\Application\Order\OrderProjector;
+use App\Application\Order\PatientOrderFinder;
+use App\Application\Order\Queries\GetPatientOrdersByPatientUuid;
+use App\Application\Order\Queries\GetPatientOrdersByPatientUuidHandler;
+use App\Application\Order\Queries\GetPatientOrdersByUserId;
+use App\Application\Order\Queries\GetPatientOrdersByUserIdHandler;
 use App\Application\Patient\Commands\EnrollPatient;
 use App\Application\Patient\Commands\RecordPatientAllergy;
 use App\Application\Patient\Commands\RecordPatientCondition;
@@ -119,6 +133,9 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(PatientListFinder::class, EloquentPatientListFinder::class);
         $this->app->bind(PatientMedicalHistoryFinder::class, EloquentPatientMedicalHistoryFinder::class);
         $this->app->bind(PatientMedicalHistoryProjector::class, EloquentPatientMedicalHistoryProjector::class);
+        $this->app->bind(OrderProjector::class, EloquentOrderProjector::class);
+        $this->app->bind(PatientOrderFinder::class, EloquentPatientOrderFinder::class);
+
     }
 
     /**
@@ -139,6 +156,21 @@ class AppServiceProvider extends ServiceProvider
         });
 
         $this->app->resolving(CommandBus::class, function (CommandBus $bus, $app) {
+            $bus->register(
+                CreateOrder::class,
+                $app->make(CreateOrderHandler::class)
+            );
+
+            $bus->register(
+                FulfillOrder::class,
+                $app->make(FulfillOrderHandler::class)
+            );
+
+            $bus->register(
+                CancelOrder::class,
+                $app->make(CancelOrderHandler::class)
+            );
+
             $bus->register(
                 EnrollPatient::class,
                 $app->make(EnrollPatientHandler::class)
@@ -235,6 +267,16 @@ class AppServiceProvider extends ServiceProvider
                 GetPatientListCount::class,
                 $app->make(GetPatientListCountHandler::class)
             );
+            $bus->register(
+                GetPatientOrdersByUserId::class,
+                $app->make(GetPatientOrdersByUserIdHandler::class)
+            );
+
+            $bus->register(
+                GetPatientOrdersByPatientUuid::class,
+                $app->make(GetPatientOrdersByPatientUuidHandler::class)
+            );
+
         });
     }
 }
