@@ -55,10 +55,54 @@ interface PatientSubscriptionDetail extends PatientSubscriptionSummary {
   ends_at: string | null
 }
 
+interface PatientMedicalHistorySnapshot {
+  allergies: Array<{
+    id: number
+    allergen: string | null
+    reaction: string | null
+    severity: string | null
+    notes: string | null
+  }>
+  conditions: Array<{
+    id: number
+    condition_name: string | null
+    diagnosed_at: string | null
+    had_condition_before: boolean
+    is_chronic: boolean
+    notes: string | null
+  }>
+  medications: Array<{
+    id: number
+    medication_id: number | null
+    medication_name: string | null
+    start_date: string | null
+    end_date: string | null
+    dosage: string | null
+    frequency: string | null
+    notes: string | null
+  }>
+  surgical_history: {
+    past_injuries: boolean
+    past_injuries_details: string | null
+    surgery: boolean
+    surgery_details: string | null
+    chronic_conditions_details: string | null
+  } | null
+  family_history: {
+    chronic_pain: boolean
+    chronic_pain_details: string | null
+    conditions: Array<{
+      id: number
+      name: string | null
+    }>
+  } | null
+}
+
 interface PatientDetail extends Omit<PatientListItem, 'subscription'> {
   demographics: PatientDemographics | null
   enrollment: PatientEnrollmentDetail | null
   subscription: PatientSubscriptionDetail | null
+  medical_history: PatientMedicalHistorySnapshot | null
 }
 
 type BadgeVariant = 'default' | 'secondary' | 'destructive' | 'outline'
@@ -326,7 +370,7 @@ onMounted(() => {
           </div>
           <p v-else-if="detailError" class="text-destructive">{{ detailError }}</p>
           <p v-else-if="!selectedPatient">Select a patient to view details.</p>
-          <div v-else class="space-y-2 text-xs">
+          <div v-else class="space-y-4 text-xs">
             <div>
               <p class="text-sm font-medium text-foreground">
                 {{ selectedPatient.fname }} {{ selectedPatient.lname }}
@@ -413,6 +457,93 @@ onMounted(() => {
                   {{ formatDate(selectedPatient.subscription.ends_at) }}
                 </span>
               </p>
+            </div>
+
+            <div v-if="selectedPatient.medical_history" class="space-y-3">
+              <p class="text-sm font-medium text-foreground">Medical history</p>
+
+              <div v-if="selectedPatient.medical_history.allergies.length">
+                <p class="font-semibold">Allergies</p>
+                <ul class="list-disc pl-4">
+                  <li v-for="allergy in selectedPatient.medical_history.allergies" :key="allergy.id">
+                    <span class="font-medium">{{ allergy.allergen }}</span>
+                    <span v-if="allergy.reaction"> – {{ allergy.reaction }}</span>
+                    <Badge v-if="allergy.severity" variant="outline" class="ml-1 capitalize">
+                      {{ allergy.severity }}
+                    </Badge>
+                    <span v-if="allergy.notes" class="block text-muted-foreground">{{ allergy.notes }}</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div v-if="selectedPatient.medical_history.conditions.length">
+                <p class="font-semibold">Conditions</p>
+                <ul class="list-disc pl-4">
+                  <li v-for="condition in selectedPatient.medical_history.conditions" :key="condition.id">
+                    <span class="font-medium">{{ condition.condition_name }}</span>
+                    <span v-if="condition.diagnosed_at"> – diagnosed {{ formatDate(condition.diagnosed_at) }}</span>
+                    <span v-if="condition.is_chronic" class="ml-1 text-xs text-muted-foreground">(chronic)</span>
+                    <span v-if="condition.notes" class="block text-muted-foreground">{{ condition.notes }}</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div v-if="selectedPatient.medical_history.medications.length">
+                <p class="font-semibold">Medications</p>
+                <ul class="list-disc pl-4">
+                  <li v-for="med in selectedPatient.medical_history.medications" :key="med.id">
+                    <span class="font-medium">{{ med.medication_name || 'Medication #' + med.medication_id }}</span>
+                    <span v-if="med.dosage"> – {{ med.dosage }}</span>
+                    <span v-if="med.frequency" class="ml-1 text-xs text-muted-foreground">({{ med.frequency }})</span>
+                    <div class="text-muted-foreground">
+                      <span v-if="med.start_date">{{ formatDate(med.start_date) }}</span>
+                      <span v-if="med.start_date && med.end_date">
+                        –
+                      </span>
+                      <span v-if="med.end_date">{{ formatDate(med.end_date) }}</span>
+                    </div>
+                    <span v-if="med.notes" class="block text-muted-foreground">{{ med.notes }}</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div v-if="selectedPatient.medical_history.surgical_history">
+                <p class="font-semibold">Surgical / injuries</p>
+                <p v-if="selectedPatient.medical_history.surgical_history.past_injuries">
+                  Past injuries:
+                  <span>{{ selectedPatient.medical_history.surgical_history.past_injuries_details || 'details not provided' }}</span>
+                </p>
+                <p v-if="selectedPatient.medical_history.surgical_history.surgery">
+                  Surgeries:
+                  <span>{{ selectedPatient.medical_history.surgical_history.surgery_details || 'details not provided' }}</span>
+                </p>
+                <p v-if="selectedPatient.medical_history.surgical_history.chronic_conditions_details">
+                  Chronic conditions:
+                  <span>{{ selectedPatient.medical_history.surgical_history.chronic_conditions_details }}</span>
+                </p>
+              </div>
+
+              <div v-if="selectedPatient.medical_history.family_history">
+                <p class="font-semibold">Family history</p>
+                <p>
+                  Chronic pain:
+                  <span>
+                    {{ selectedPatient.medical_history.family_history.chronic_pain ? 'yes' : 'no' }}
+                  </span>
+                </p>
+                <p v-if="selectedPatient.medical_history.family_history.chronic_pain_details">
+                  Details:
+                  <span>{{ selectedPatient.medical_history.family_history.chronic_pain_details }}</span>
+                </p>
+                <ul v-if="selectedPatient.medical_history.family_history.conditions.length" class="list-disc pl-4">
+                  <li
+                    v-for="condition in selectedPatient.medical_history.family_history.conditions"
+                    :key="condition.id"
+                  >
+                    {{ condition.name }}
+                  </li>
+                </ul>
+              </div>
             </div>
           </div>
         </CardContent>

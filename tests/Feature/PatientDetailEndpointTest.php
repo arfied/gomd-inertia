@@ -1,5 +1,12 @@
 <?php
 
+use App\Models\Allergy;
+use App\Models\FamilyMedicalCondition;
+use App\Models\FamilyMedicalHistory;
+use App\Models\MedicalCondition;
+use App\Models\MedicalSurgicalHistory;
+use App\Models\Medication;
+use App\Models\MedicationHistory;
 use App\Models\PatientEnrollment;
 use App\Models\Subscription;
 use App\Models\SubscriptionPlan;
@@ -135,7 +142,111 @@ it('returns patient detail for staff users', function () {
                     'starts_at',
                     'ends_at',
                 ],
+                'medical_history' => [
+                    'allergies',
+                    'conditions',
+                    'medications',
+                    'surgical_history',
+                    'family_history',
+                ],
             ],
         ]);
 });
+
+it('includes medical history snapshot in patient detail response', function () {
+    $staff = User::factory()->create();
+    $staff->role = 'staff';
+
+    /** @var User $patient */
+    $patient = User::factory()->create([
+        'fname' => 'Bob',
+        'lname' => 'Builder',
+        'email' => 'bob@example.test',
+    ]);
+    $patient->role = 'patient';
+
+    $patientUuid = (string) Str::uuid();
+
+    $enrollment = PatientEnrollment::create([
+        'patient_uuid' => $patientUuid,
+        'user_id' => $patient->id,
+        'source' => 'manual',
+        'metadata' => null,
+        'enrolled_at' => now()->subDays(2),
+    ]);
+
+    Allergy::create([
+        'user_id' => $patient->id,
+        'allergen' => 'Peanuts',
+        'reaction' => 'Anaphylaxis',
+        'severity' => Allergy::SEVERITY_SEVERE,
+        'notes' => 'Carries EpiPen',
+    ]);
+
+    MedicalCondition::create([
+        'patient_id' => $patient->id,
+        'condition_name' => 'Hypertension',
+        'diagnosed_at' => '2020-01-01',
+        'notes' => 'Controlled with medication',
+        'had_condition_before' => false,
+        'is_chronic' => true,
+    ]);
+
+    MedicalSurgicalHistory::create([
+        'patient_id' => $patient->id,
+        'past_injuries' => true,
+        'past_injuries_details' => 'Fractured arm in 2010',
+        'surgery' => true,
+        'surgery_details' => 'Appendectomy in 2015',
+        'chronic_conditions_details' => 'Chronic lower back pain',
+    ]);
+
+    $familyHistory = FamilyMedicalHistory::create([
+        'patient_id' => $patient->id,
+        'chronic_pain' => true,
+        'chronic_pain_details' => 'Mother with chronic back pain',
+    ]);
+
+    FamilyMedicalCondition::create([
+        'family_medical_history_id' => $familyHistory->id,
+        'name' => 'Diabetes',
+    ]);
+
+    $medication = Medication::create([
+        'name' => 'Ibuprofen',
+        'generic_name' => 'Ibuprofen',
+        'description' => 'Pain reliever',
+        'dosage_form' => 'tablet',
+        'strength' => '200mg',
+        'manufacturer' => 'Acme Pharma',
+        'ndc_number' => '12345-6789',
+        'unit_price' => 10.00,
+        'requires_prescription' => false,
+        'controlled_substance' => false,
+        'storage_conditions' => null,
+    ]);
+
+    $history = new MedicationHistory();
+    $history->user_id = $patient->id;
+    $history->medication_id = $medication->id;
+    $history->start_date = now()->subDays(10)->toDateString();
+    $history->end_date = null;
+    $history->dosage = '1 tablet';
+    $history->frequency = 'twice daily';
+    $history->notes = 'After meals';
+    $history->save();
+
+    $this->actingAs($staff);
+
+    $response = $this->getJson(route('patients.show', ['patientUuid' => $patientUuid]));
+
+    $response->assertOk();
+
+    $response->assertJsonPath('patient.medical_history.allergies.0.allergen', 'Peanuts');
+    $response->assertJsonPath('patient.medical_history.conditions.0.condition_name', 'Hypertension');
+    $response->assertJsonPath('patient.medical_history.medications.0.dosage', '1 tablet');
+    $response->assertJsonPath('patient.medical_history.surgical_history.past_injuries', true);
+    $response->assertJsonPath('patient.medical_history.family_history.chronic_pain', true);
+});
+
 

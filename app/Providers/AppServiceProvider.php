@@ -15,6 +15,7 @@ use App\Application\Patient\EloquentPatientDocumentProjector;
 use App\Application\Patient\EloquentPatientEnrollmentFinder;
 use App\Application\Patient\EloquentPatientEnrollmentProjector;
 use App\Application\Patient\EloquentPatientListFinder;
+use App\Application\Patient\EloquentPatientMedicalHistoryFinder;
 use App\Application\Patient\EloquentPatientSubscriptionFinder;
 use App\Application\Patient\EloquentPatientTimelineFinder;
 use App\Application\Patient\Handlers\EnrollPatientHandler;
@@ -29,6 +30,7 @@ use App\Application\Patient\PatientDocumentProjector;
 use App\Application\Patient\PatientEnrollmentFinder;
 use App\Application\Patient\PatientEnrollmentProjector;
 use App\Application\Patient\PatientListFinder;
+use App\Application\Patient\PatientMedicalHistoryFinder;
 use App\Application\Patient\PatientSubscriptionFinder;
 use App\Application\Patient\PatientTimelineFinder;
 use App\Application\Patient\Queries\GetPatientDemographicsByPatientUuid;
@@ -47,6 +49,8 @@ use App\Application\Patient\Queries\GetPatientList;
 use App\Application\Patient\Queries\GetPatientListHandler;
 use App\Application\Patient\Queries\GetPatientListCount;
 use App\Application\Patient\Queries\GetPatientListCountHandler;
+use App\Application\Patient\Queries\GetPatientMedicalHistoryByUserId;
+use App\Application\Patient\Queries\GetPatientMedicalHistoryByUserIdHandler;
 use App\Application\Patient\Queries\GetPatientSubscriptionByUserId;
 use App\Application\Patient\Queries\GetPatientSubscriptionByUserIdHandler;
 use App\Application\Patient\Queries\GetRecentPatientActivityByUserId;
@@ -101,6 +105,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(PatientTimelineFinder::class, EloquentPatientTimelineFinder::class);
         $this->app->bind(PatientSubscriptionFinder::class, EloquentPatientSubscriptionFinder::class);
         $this->app->bind(PatientListFinder::class, EloquentPatientListFinder::class);
+        $this->app->bind(PatientMedicalHistoryFinder::class, EloquentPatientMedicalHistoryFinder::class);
     }
 
     /**
@@ -161,6 +166,11 @@ class AppServiceProvider extends ServiceProvider
             $bus->register(
                 GetRecentPatientActivityByUserId::class,
                 $app->make(GetRecentPatientActivityByUserIdHandler::class)
+            );
+
+            $bus->register(
+                GetPatientMedicalHistoryByUserId::class,
+                $app->make(GetPatientMedicalHistoryByUserIdHandler::class)
             );
 
             $bus->register(

@@ -6,6 +6,7 @@ use App\Application\Patient\Queries\GetPatientDemographicsByUserId;
 use App\Application\Patient\Queries\GetPatientEnrollmentByPatientUuid;
 use App\Application\Patient\Queries\GetPatientList;
 use App\Application\Patient\Queries\GetPatientListCount;
+use App\Application\Patient\Queries\GetPatientMedicalHistoryByUserId;
 use App\Application\Patient\Queries\GetPatientSubscriptionByUserId;
 use App\Application\Queries\QueryBus;
 use App\Models\PatientEnrollment;
@@ -99,6 +100,10 @@ class PatientListController extends Controller
             new GetPatientSubscriptionByUserId($enrollment->user_id)
         );
 
+        $medicalHistory = $queryBus->ask(
+            new GetPatientMedicalHistoryByUserId($enrollment->user_id)
+        );
+
         return response()->json([
             'patient' => [
                 'patient_uuid' => $enrollment->patient_uuid,
@@ -131,6 +136,7 @@ class PatientListController extends Controller
                     'starts_at' => optional($subscription->starts_at)?->toISOString(),
                     'ends_at' => optional($subscription->ends_at)?->toISOString(),
                 ] : null,
+                'medical_history' => $medicalHistory,
             ],
         ]);
     }
