@@ -1794,6 +1794,7 @@ const customPreset = {
 - [x] Generic projection replay tooling for rebuilding read models from the event store.
 - [ ] (Minor) Future projection replay enhancements (richer config, time-window filters, dedicated registry tests).
 - [x] Monitoring/observability for event store and queues (metrics, logs, alerts).
+- [ ] (Minor) Add a simple CLI or dashboard endpoint to inspect cached event store and queue metrics (processed/failed jobs, events stored by type) for quick operational checks.
 
 ### 2. Patient Management
 
