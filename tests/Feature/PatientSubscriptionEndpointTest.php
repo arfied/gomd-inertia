@@ -71,3 +71,63 @@ it('returns the current subscription for the authenticated user', function () {
         ]);
 });
 
+it('requires authentication to cancel a subscription', function () {
+    $response = $this->postJson(route('patient.subscription.cancel'));
+
+    $response->assertStatus(401);
+});
+
+it('returns null subscription when cancelling with no current subscription', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user);
+
+    $response = $this->postJson(route('patient.subscription.cancel'));
+
+    $response
+        ->assertOk()
+        ->assertJson([
+            'subscription' => null,
+        ]);
+});
+
+it('cancels the current subscription for the authenticated user', function () {
+    /** @var User $user */
+    $user = User::factory()->create();
+
+    $plan = SubscriptionPlan::create([
+        'name' => 'TeleMed Pro Monthly',
+        'price' => 30.00,
+        'duration_months' => 1,
+        'service_limit' => null,
+        'status' => 'active',
+    ]);
+
+    $subscription = Subscription::create([
+        'user_id' => $user->id,
+        'plan_id' => $plan->id,
+        'starts_at' => now()->subDay(),
+        'ends_at' => now()->addMonth(),
+        'status' => Subscription::STATUS_ACTIVE,
+        'is_trial' => false,
+    ]);
+
+    $this->actingAs($user);
+
+    $response = $this->postJson(route('patient.subscription.cancel'));
+
+    $response
+        ->assertOk()
+        ->assertJson([
+            'subscription' => [
+                'id' => $subscription->id,
+                'status' => Subscription::STATUS_CANCELLED,
+            ],
+        ]);
+
+    $subscription->refresh();
+
+    expect($subscription->status)->toBe(Subscription::STATUS_CANCELLED);
+    expect($subscription->cancelled_at)->not->toBeNull();
+});
+
