@@ -521,10 +521,12 @@ event stream**. TeleMed Pro provides generic, reusable tooling to do this safely
 ### Service behaviour
 
 The `ProjectionReplayService` lives at `App\\Services\\ProjectionReplayService` and is registered as a
-singleton in the container. It depends on Laravel's `Dispatcher` contract and keeps two maps:
-The default event and projection maps are defined in `config/projection_replay.php` and can be extended as new aggregates and projections are added.
+singleton in the container. It depends on Laravel's `Dispatcher` contract and on a small
+`ProjectionRegistry` service that centralises the metadata needed to replay projections.
+The registry's default event and projection maps are defined in `config/projection_replay.php` and can
+be extended as new aggregates and projections are added.
 
-
+In that registry you configure:
 
 - **Event type map**: maps logical `event_type` strings (from the `event_store` table) to concrete
   `DomainEvent` classes. For example, `patient.enrolled` is mapped to
