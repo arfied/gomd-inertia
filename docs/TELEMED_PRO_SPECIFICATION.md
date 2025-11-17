@@ -1792,7 +1792,8 @@ const customPreset = {
 - [x] Laravel event publication pattern from stored events to projectors.
 - [x] First projections and read-model pattern (patient enrollment).
 - [x] Generic projection replay tooling for rebuilding read models from the event store.
-- [ ] Monitoring/observability for event store and queues (metrics, logs, alerts).
+- [ ] (Minor) Future projection replay enhancements (richer config, time-window filters, dedicated registry tests).
+- [x] Monitoring/observability for event store and queues (metrics, logs, alerts).
 
 ### 2. Patient Management
 

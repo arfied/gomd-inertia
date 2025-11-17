@@ -543,6 +543,22 @@ During a replay run, the service:
    - `fromId` / `toId`  `WHERE id BETWEEN ...`
    - `projection`  `WHERE event_type IN (...)` based on the projection's event map.
 3. Streams results in batches using `chunkById` (default batch size: 100).
+
+### Monitoring & observability
+
+For the event store, an `EventStoreMonitor` is invoked every time a domain event is persisted. It:
+
+- Increments lightweight counters in the cache (total events stored, by `event_type`).
+- Writes structured logs (`Event store: event persisted`) with aggregate and event context.
+
+For queues, a `QueueMonitor` subscribes to the Laravel queue events:
+
+- On `JobProcessed` it increments cache counters and logs a `Queue job processed` entry.
+- On `JobFailed` it increments failure counters and logs a `Queue job failed` entry with the exception message.
+
+These metrics and logs are designed to feed into external monitoring/alerting (e.g. log shipping and dashboards)
+without introducing additional runtime dependencies.
+
 4. For each `StoredEvent`, looks up the corresponding `DomainEvent` class, rehydrates it using the
    stored `aggregate_uuid`, `event_data`, `metadata`, and `occurred_at` (converted back to a
    `DateTimeImmutable`), and either:
