@@ -68,3 +68,44 @@ test('projections:replay supports dry run without mutating projections', functio
     expect(PatientEnrollment::query()->count())->toBe(0);
 });
 
+
+
+test('projections:replay rebuilds patient demographics projection from event store', function () {
+    if (! extension_loaded('pdo_sqlite')) {
+        $this->markTestSkipped('pdo_sqlite extension is required for this test.');
+    }
+
+    $user = User::factory()->create([
+        'fname' => 'Old',
+        'lname' => 'Name',
+        'gender' => 'U',
+    ]);
+
+    $patientUuid = 'patient-uuid-replay-demographics';
+
+    StoredEvent::create([
+        'aggregate_uuid' => $patientUuid,
+        'aggregate_type' => 'patient',
+        'event_type' => 'patient.demographics_updated',
+        'event_data' => [
+            'user_id' => $user->id,
+            'fname' => 'Replay',
+            'lname' => 'Patient',
+            'gender' => 'F',
+        ],
+        'metadata' => ['source' => 'replay-test'],
+        'occurred_at' => now(),
+    ]);
+
+    Artisan::call('projections:replay', [
+        '--projection' => 'patient-demographics',
+        '--aggregate-type' => 'patient',
+    ]);
+
+    $user->refresh();
+
+    expect($user->fname)->toBe('Replay');
+    expect($user->lname)->toBe('Patient');
+    expect($user->gender)->toBe('F');
+});
+

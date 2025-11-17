@@ -4,19 +4,29 @@ namespace App\Providers;
 
 use App\Application\Commands\CommandBus;
 use App\Application\Patient\Commands\EnrollPatient;
+use App\Application\Patient\Commands\UpdatePatientDemographics;
 use App\Application\Patient\EloquentPatientActivityFinder;
 use App\Application\Patient\EloquentPatientActivityProjector;
+use App\Application\Patient\EloquentPatientDemographicsFinder;
+use App\Application\Patient\EloquentPatientDemographicsProjector;
 use App\Application\Patient\EloquentPatientEnrollmentFinder;
 use App\Application\Patient\EloquentPatientEnrollmentProjector;
 use App\Application\Patient\EloquentPatientSubscriptionFinder;
 use App\Application\Patient\EloquentPatientTimelineFinder;
 use App\Application\Patient\Handlers\EnrollPatientHandler;
+use App\Application\Patient\Handlers\UpdatePatientDemographicsHandler;
 use App\Application\Patient\PatientActivityFinder;
 use App\Application\Patient\PatientActivityProjector;
+use App\Application\Patient\PatientDemographicsFinder;
+use App\Application\Patient\PatientDemographicsProjector;
 use App\Application\Patient\PatientEnrollmentFinder;
 use App\Application\Patient\PatientEnrollmentProjector;
 use App\Application\Patient\PatientSubscriptionFinder;
 use App\Application\Patient\PatientTimelineFinder;
+use App\Application\Patient\Queries\GetPatientDemographicsByPatientUuid;
+use App\Application\Patient\Queries\GetPatientDemographicsByPatientUuidHandler;
+use App\Application\Patient\Queries\GetPatientDemographicsByUserId;
+use App\Application\Patient\Queries\GetPatientDemographicsByUserIdHandler;
 use App\Application\Patient\Queries\GetPatientEnrollmentByUserId;
 use App\Application\Patient\Queries\GetPatientEnrollmentByUserIdHandler;
 use App\Application\Patient\Queries\GetPatientEnrollmentByPatientUuid;
@@ -65,6 +75,9 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(PatientEnrollmentProjector::class, EloquentPatientEnrollmentProjector::class);
         $this->app->bind(PatientEnrollmentFinder::class, EloquentPatientEnrollmentFinder::class);
 
+        $this->app->bind(PatientDemographicsProjector::class, EloquentPatientDemographicsProjector::class);
+        $this->app->bind(PatientDemographicsFinder::class, EloquentPatientDemographicsFinder::class);
+
         $this->app->bind(PatientActivityProjector::class, EloquentPatientActivityProjector::class);
         $this->app->bind(PatientActivityFinder::class, EloquentPatientActivityFinder::class);
 
@@ -94,6 +107,11 @@ class AppServiceProvider extends ServiceProvider
                 EnrollPatient::class,
                 $app->make(EnrollPatientHandler::class)
             );
+
+            $bus->register(
+                UpdatePatientDemographics::class,
+                $app->make(UpdatePatientDemographicsHandler::class)
+            );
         });
 
         $this->app->resolving(QueryBus::class, function (QueryBus $bus, $app) {
@@ -105,6 +123,16 @@ class AppServiceProvider extends ServiceProvider
             $bus->register(
                 GetPatientEnrollmentByPatientUuid::class,
                 $app->make(GetPatientEnrollmentByPatientUuidHandler::class)
+            );
+
+            $bus->register(
+                GetPatientDemographicsByUserId::class,
+                $app->make(GetPatientDemographicsByUserIdHandler::class)
+            );
+
+            $bus->register(
+                GetPatientDemographicsByPatientUuid::class,
+                $app->make(GetPatientDemographicsByPatientUuidHandler::class)
             );
 
             $bus->register(
