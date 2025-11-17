@@ -22,6 +22,11 @@ Route::get('dashboard', function () {
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
+    Route::get('dashboard/patients', function (\Illuminate\Http\Request $request) {
+        abort_unless(in_array($request->user()->role, ['admin', 'staff'], true), 403);
+
+        return Inertia::render('staff/Patients/Index');
+    })->name('dashboard.patients');
     Route::get('patient/enrollment', [PatientEnrollmentController::class, 'show'])
         ->name('patient.enrollment.show');
 
