@@ -54,6 +54,9 @@ Route::middleware('auth')->group(function () {
 
     Route::get('patients/count', [PatientListController::class, 'count'])
         ->name('patients.count');
+
+    Route::get('patients/{patientUuid}', [PatientListController::class, 'show'])
+        ->name('patients.show');
 });
 
 require __DIR__.'/settings.php';
