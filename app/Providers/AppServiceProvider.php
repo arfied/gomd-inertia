@@ -20,6 +20,8 @@ use App\Application\Order\Queries\GetPatientOrdersByPatientUuidHandler;
 use App\Application\Order\Queries\GetPatientOrdersByUserId;
 use App\Application\Order\Queries\GetPatientOrdersByUserIdHandler;
 use App\Application\Patient\Commands\EnrollPatient;
+use App\Application\Prescription\Commands\CreatePrescription;
+use App\Application\Prescription\Handlers\CreatePrescriptionHandler;
 use App\Application\Patient\Commands\RecordPatientAllergy;
 use App\Application\Patient\Commands\RecordPatientCondition;
 use App\Application\Patient\Commands\RecordPatientMedication;
@@ -177,6 +179,11 @@ class AppServiceProvider extends ServiceProvider
             $bus->register(
                 CancelOrder::class,
                 $app->make(CancelOrderHandler::class)
+            );
+
+            $bus->register(
+                CreatePrescription::class,
+                $app->make(CreatePrescriptionHandler::class)
             );
 
             $bus->register(
