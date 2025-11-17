@@ -30,6 +30,8 @@ use App\Application\Patient\Queries\GetRecentPatientActivityByUserIdHandler;
 use App\Application\Queries\QueryBus;
 use App\Services\EventStore;
 use App\Services\EventStoreContract;
+use App\Services\ProjectionReplayService;
+use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -44,6 +46,12 @@ class AppServiceProvider extends ServiceProvider
 
         $this->app->singleton(CommandBus::class, fn () => new CommandBus());
         $this->app->singleton(QueryBus::class, fn () => new QueryBus());
+
+        $this->app->singleton(ProjectionReplayService::class, function ($app): ProjectionReplayService {
+            return new ProjectionReplayService(
+                dispatcher: $app->make(Dispatcher::class),
+            );
+        });
 
         $this->app->bind(PatientEnrollmentProjector::class, EloquentPatientEnrollmentProjector::class);
         $this->app->bind(PatientEnrollmentFinder::class, EloquentPatientEnrollmentFinder::class);
