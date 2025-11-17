@@ -22,6 +22,7 @@ return [
         'patient.medication_added' => App\Domain\Patient\Events\PatientMedicationAdded::class,
         'patient.visit_summary_recorded' => App\Domain\Patient\Events\PatientVisitSummaryRecorded::class,
         'order.created' => App\Domain\Order\Events\OrderCreated::class,
+        'prescription.created' => App\Domain\Prescription\Events\PrescriptionCreated::class,
     ],
 
     'projections' => [
@@ -56,6 +57,11 @@ return [
         // Rebuilds the medication orders projection over legacy medication_orders
         'order' => [
             'order.created',
+        ],
+
+        // Rebuilds the prescriptions projection over legacy prescriptions
+        'prescription' => [
+            'prescription.created',
         ],
     ],
 ];

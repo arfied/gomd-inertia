@@ -22,6 +22,8 @@ use App\Application\Order\Queries\GetPatientOrdersByUserIdHandler;
 use App\Application\Patient\Commands\EnrollPatient;
 use App\Application\Prescription\Commands\CreatePrescription;
 use App\Application\Prescription\Handlers\CreatePrescriptionHandler;
+use App\Application\Prescription\EloquentPrescriptionProjector;
+use App\Application\Prescription\PrescriptionProjector;
 use App\Application\Patient\Commands\RecordPatientAllergy;
 use App\Application\Patient\Commands\RecordPatientCondition;
 use App\Application\Patient\Commands\RecordPatientMedication;
@@ -139,6 +141,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(PatientMedicalHistoryProjector::class, EloquentPatientMedicalHistoryProjector::class);
         $this->app->bind(OrderProjector::class, EloquentOrderProjector::class);
         $this->app->bind(PatientOrderFinder::class, EloquentPatientOrderFinder::class);
+        $this->app->bind(PrescriptionProjector::class, EloquentPrescriptionProjector::class);
 
     }
 
