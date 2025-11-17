@@ -50,6 +50,11 @@ class PatientListController extends Controller
                 'email' => $row->email,
                 'status' => $row->status,
                 'enrolled_at' => optional($row->enrolled_at)?->toISOString(),
+                'subscription' => $row->subscription_status !== null ? [
+                    'status' => $row->subscription_status,
+                    'plan_name' => $row->subscription_plan_name,
+                    'is_trial' => (bool) $row->subscription_is_trial,
+                ] : null,
             ];
         })->all();
 

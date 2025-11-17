@@ -1,6 +1,8 @@
 <?php
 
 use App\Models\PatientEnrollment;
+use App\Models\Subscription;
+use App\Models\SubscriptionPlan;
 use App\Models\User;
 use Illuminate\Support\Str;
 
@@ -103,6 +105,57 @@ it('returns a filtered count for the patient list', function () {
 
     $response->assertOk()->assertJson([
         'count' => 1,
+    ]);
+});
+
+it('includes subscription summary data in the patient list when available', function () {
+    $staff = User::factory()->create();
+    $staff->role = 'staff';
+
+    $patient = User::factory()->create([
+        'fname' => 'Alice',
+        'lname' => 'Example',
+        'email' => 'alice@example.test',
+    ]);
+    $patient->role = 'patient';
+
+    PatientEnrollment::create([
+        'patient_uuid' => (string) Str::uuid(),
+        'user_id' => $patient->id,
+        'source' => 'manual',
+        'metadata' => [],
+        'enrolled_at' => now(),
+    ]);
+
+    $plan = SubscriptionPlan::create([
+        'name' => 'Test Plan',
+        'price' => 100,
+        'duration_months' => 1,
+        'service_limit' => null,
+        'status' => 'active',
+    ]);
+
+    Subscription::create([
+        'user_id' => $patient->id,
+        'plan_id' => $plan->id,
+        'starts_at' => now()->subDay(),
+        'ends_at' => now()->addDay(),
+        'status' => Subscription::STATUS_ACTIVE,
+        'is_trial' => true,
+    ]);
+
+    $this->actingAs($staff);
+
+    $response = $this->getJson(route('patients.index', ['per_page' => 10]));
+
+    $response->assertOk();
+
+    $json = $response->json();
+
+    expect($json['patients'][0]['subscription'])->toMatchArray([
+        'status' => Subscription::STATUS_ACTIVE,
+        'plan_name' => 'Test Plan',
+        'is_trial' => true,
     ]);
 });
 

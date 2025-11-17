@@ -14,6 +14,12 @@ const breadcrumbs: BreadcrumbItem[] = [
   { title: 'Patients', href: '/dashboard/patients' },
 ]
 
+interface PatientSubscriptionSummary {
+  status: string
+  plan_name: string | null
+  is_trial: boolean
+}
+
 interface PatientListItem {
   patient_uuid: string
   user_id: number
@@ -22,6 +28,7 @@ interface PatientListItem {
   email: string | null
   status: string | null
   enrolled_at: string | null
+  subscription: PatientSubscriptionSummary | null
 }
 
 interface PatientDemographics {
@@ -42,16 +49,13 @@ interface PatientEnrollmentDetail {
   enrolled_at: string | null
 }
 
-interface PatientSubscriptionDetail {
+interface PatientSubscriptionDetail extends PatientSubscriptionSummary {
   id: number | null
-  status: string
-  plan_name: string | null
-  is_trial: boolean
   starts_at: string | null
   ends_at: string | null
 }
 
-interface PatientDetail extends PatientListItem {
+interface PatientDetail extends Omit<PatientListItem, 'subscription'> {
   demographics: PatientDemographics | null
   enrollment: PatientEnrollmentDetail | null
   subscription: PatientSubscriptionDetail | null
@@ -256,6 +260,8 @@ onMounted(() => {
                   <th class="px-3 py-2">Name</th>
                   <th class="px-3 py-2">Email</th>
                   <th class="px-3 py-2">Status</th>
+                  <th class="px-3 py-2">Plan</th>
+                  <th class="px-3 py-2">Subscription</th>
                   <th class="px-3 py-2">Enrolled at</th>
                   <th class="px-3 py-2" />
                 </tr>
@@ -268,6 +274,23 @@ onMounted(() => {
                     <Badge :variant="statusBadgeVariant(patient.status)" class="capitalize">
                       {{ patient.status || 'unknown' }}
                     </Badge>
+                  </td>
+                  <td class="px-3 py-2 text-xs text-muted-foreground">
+                    <span v-if="patient.subscription">
+                      {{ patient.subscription.plan_name || 'TeleMed Pro plan' }}
+                      <span v-if="patient.subscription.is_trial">(trial)</span>
+                    </span>
+                    <span v-else>—</span>
+                  </td>
+                  <td class="px-3 py-2">
+                    <Badge
+                      v-if="patient.subscription"
+                      :variant="subscriptionBadgeVariant(patient.subscription.status)"
+                      class="capitalize"
+                    >
+                      {{ patient.subscription.status }}
+                    </Badge>
+                    <span v-else class="text-xs text-muted-foreground">No subscription</span>
                   </td>
                   <td class="px-3 py-2 text-xs text-muted-foreground">
                     {{ formatDate(patient.enrolled_at) || '—' }}
