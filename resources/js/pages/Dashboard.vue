@@ -7,6 +7,8 @@ import { Head } from '@inertiajs/vue3';
 import PlaceholderPattern from '../components/PlaceholderPattern.vue';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -156,6 +158,20 @@ function formatActivityTimestamp(isoString: string | null): string {
     return date.toLocaleString();
 }
 
+function formatDate(isoString: string | null): string {
+    if (!isoString) {
+        return '';
+    }
+
+    const date = new Date(isoString);
+
+    if (Number.isNaN(date.getTime())) {
+        return isoString;
+    }
+
+    return date.toLocaleDateString();
+}
+
 function formatTimelineSource(source: string | null): string | null {
     if (!source) {
         return null;
@@ -185,6 +201,344 @@ function getXsrfToken(): string | null {
     }
 
     return null;
+}
+
+async function extractErrorMessage(defaultMessage: string, response: Response): Promise<string> {
+    try {
+        const data = (await response.json()) as any;
+
+        if (data && typeof data.message === 'string') {
+            return data.message;
+        }
+
+        if (data && data.errors && typeof data.errors === 'object') {
+            const firstError = Object.values(data.errors as Record<string, string[]>)[0]?.[0];
+
+            if (typeof firstError === 'string') {
+                return firstError;
+            }
+        }
+    } catch {
+        // ignore
+    }
+
+    return defaultMessage;
+}
+
+interface PatientMedicalHistorySnapshot {
+    allergies: Array<{
+        id: number;
+        allergen: string | null;
+        reaction: string | null;
+        severity: string | null;
+        notes: string | null;
+    }>;
+    conditions: Array<{
+        id: number;
+        condition_name: string | null;
+        diagnosed_at: string | null;
+        had_condition_before: boolean;
+        is_chronic: boolean;
+        notes: string | null;
+    }>;
+    medications: Array<{
+        id: number;
+        medication_id: number | null;
+        medication_name: string | null;
+        start_date: string | null;
+        end_date: string | null;
+        dosage: string | null;
+        frequency: string | null;
+        notes: string | null;
+    }>;
+    surgical_history: {
+        past_injuries: boolean;
+        past_injuries_details: string | null;
+        surgery: boolean;
+        surgery_details: string | null;
+        chronic_conditions_details: string | null;
+    } | null;
+    family_history: {
+        chronic_pain: boolean;
+        chronic_pain_details: string | null;
+        conditions: Array<{
+            id: number;
+            name: string | null;
+        }>;
+    } | null;
+}
+
+const medicalHistory = ref<PatientMedicalHistorySnapshot | null>(null);
+const loadingMedicalHistory = ref(false);
+const medicalHistoryError = ref<string | null>(null);
+
+const showAllergyForm = ref(false);
+const showConditionForm = ref(false);
+const showMedicationForm = ref(false);
+const showVisitSummaryForm = ref(false);
+
+const submittingAllergy = ref(false);
+const submittingCondition = ref(false);
+const submittingMedication = ref(false);
+const submittingVisitSummary = ref(false);
+
+const allergyError = ref<string | null>(null);
+const conditionError = ref<string | null>(null);
+const medicationError = ref<string | null>(null);
+const visitSummaryError = ref<string | null>(null);
+
+const allergyForm = ref({
+    allergen: '',
+    reaction: '',
+    severity: '',
+    notes: '',
+});
+
+const conditionForm = ref({
+    condition_name: '',
+    diagnosed_at: '',
+    had_condition_before: false,
+    is_chronic: false,
+    notes: '',
+});
+
+const medicationForm = ref({
+    medication_id: '',
+    dosage: '',
+    frequency: '',
+    start_date: '',
+    end_date: '',
+    notes: '',
+});
+
+const visitSummaryForm = ref({
+    past_injuries: false,
+    past_injuries_details: '',
+    surgery: false,
+    surgery_details: '',
+    chronic_conditions_details: '',
+    chronic_pain: false,
+    chronic_pain_details: '',
+    family_history_conditions_text: '',
+});
+
+async function loadMedicalHistory(): Promise<void> {
+    loadingMedicalHistory.value = true;
+    medicalHistoryError.value = null;
+
+    try {
+        const response = await fetch('/patient/medical-history', {
+            headers: {
+                Accept: 'application/json',
+            },
+            credentials: 'same-origin',
+        });
+
+        if (!response.ok) {
+            medicalHistoryError.value = `Failed to load medical history (${response.status})`;
+            return;
+        }
+
+        const data = (await response.json()) as { medical_history: PatientMedicalHistorySnapshot | null };
+        medicalHistory.value = data.medical_history ?? null;
+    } catch {
+        medicalHistoryError.value = 'A network error occurred while loading your medical history.';
+    } finally {
+        loadingMedicalHistory.value = false;
+    }
+}
+
+async function submitAllergy(): Promise<void> {
+    submittingAllergy.value = true;
+    allergyError.value = null;
+
+    try {
+        const xsrfToken = getXsrfToken();
+
+        const response = await fetch('/patient/medical-history/allergies', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+                ...(xsrfToken ? { 'X-XSRF-TOKEN': xsrfToken } : {}),
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify(allergyForm.value),
+        });
+
+        if (!response.ok) {
+            allergyError.value = await extractErrorMessage('Failed to save allergy.', response);
+            return;
+        }
+
+        const data = (await response.json()) as { medical_history: PatientMedicalHistorySnapshot | null };
+        medicalHistory.value = data.medical_history ?? null;
+
+        showAllergyForm.value = false;
+        allergyForm.value = {
+            allergen: '',
+            reaction: '',
+            severity: '',
+            notes: '',
+        };
+    } catch {
+        allergyError.value = 'A network error occurred while saving allergy.';
+    } finally {
+        submittingAllergy.value = false;
+    }
+}
+
+async function submitCondition(): Promise<void> {
+    submittingCondition.value = true;
+    conditionError.value = null;
+
+    try {
+        const xsrfToken = getXsrfToken();
+
+        const response = await fetch('/patient/medical-history/conditions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+                ...(xsrfToken ? { 'X-XSRF-TOKEN': xsrfToken } : {}),
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify(conditionForm.value),
+        });
+
+        if (!response.ok) {
+            conditionError.value = await extractErrorMessage('Failed to save condition.', response);
+            return;
+        }
+
+        const data = (await response.json()) as { medical_history: PatientMedicalHistorySnapshot | null };
+        medicalHistory.value = data.medical_history ?? null;
+
+        showConditionForm.value = false;
+        conditionForm.value = {
+            condition_name: '',
+            diagnosed_at: '',
+            had_condition_before: false,
+            is_chronic: false,
+            notes: '',
+        };
+    } catch {
+        conditionError.value = 'A network error occurred while saving condition.';
+    } finally {
+        submittingCondition.value = false;
+    }
+}
+
+async function submitMedication(): Promise<void> {
+    submittingMedication.value = true;
+    medicationError.value = null;
+
+    const payload = {
+        ...medicationForm.value,
+        medication_id: medicationForm.value.medication_id
+            ? Number(medicationForm.value.medication_id)
+            : null,
+    };
+
+    try {
+        const xsrfToken = getXsrfToken();
+
+        const response = await fetch('/patient/medical-history/medications', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+                ...(xsrfToken ? { 'X-XSRF-TOKEN': xsrfToken } : {}),
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+            medicationError.value = await extractErrorMessage('Failed to save medication.', response);
+            return;
+        }
+
+        const data = (await response.json()) as { medical_history: PatientMedicalHistorySnapshot | null };
+        medicalHistory.value = data.medical_history ?? null;
+
+        showMedicationForm.value = false;
+        medicationForm.value = {
+            medication_id: '',
+            dosage: '',
+            frequency: '',
+            start_date: '',
+            end_date: '',
+            notes: '',
+        };
+    } catch {
+        medicationError.value = 'A network error occurred while saving medication.';
+    } finally {
+        submittingMedication.value = false;
+    }
+}
+
+async function submitVisitSummary(): Promise<void> {
+    submittingVisitSummary.value = true;
+    visitSummaryError.value = null;
+
+    const familyConditions = visitSummaryForm.value.family_history_conditions_text
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0);
+
+    const payload: Record<string, unknown> = {
+        past_injuries: visitSummaryForm.value.past_injuries,
+        past_injuries_details: visitSummaryForm.value.past_injuries_details || null,
+        surgery: visitSummaryForm.value.surgery,
+        surgery_details: visitSummaryForm.value.surgery_details || null,
+        chronic_conditions_details: visitSummaryForm.value.chronic_conditions_details || null,
+        chronic_pain: visitSummaryForm.value.chronic_pain,
+        chronic_pain_details: visitSummaryForm.value.chronic_pain_details || null,
+    };
+
+    if (familyConditions.length > 0) {
+        payload.family_history_conditions = familyConditions;
+    }
+
+    try {
+        const xsrfToken = getXsrfToken();
+
+        const response = await fetch('/patient/medical-history/visit-summary', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+                ...(xsrfToken ? { 'X-XSRF-TOKEN': xsrfToken } : {}),
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+            visitSummaryError.value = await extractErrorMessage('Failed to save visit summary.', response);
+            return;
+        }
+
+        const data = (await response.json()) as { medical_history: PatientMedicalHistorySnapshot | null };
+        medicalHistory.value = data.medical_history ?? null;
+
+        showVisitSummaryForm.value = false;
+        visitSummaryForm.value = {
+            past_injuries: false,
+            past_injuries_details: '',
+            surgery: false,
+            surgery_details: '',
+            chronic_conditions_details: '',
+            chronic_pain: false,
+            chronic_pain_details: '',
+            family_history_conditions_text: '',
+        };
+    } catch {
+        visitSummaryError.value = 'A network error occurred while saving visit summary.';
+    } finally {
+        submittingVisitSummary.value = false;
+    }
 }
 
 async function startEnrollment() {
@@ -358,6 +712,7 @@ async function reloadTimelineForCurrentFilter() {
 onMounted(() => {
     void loadEnrollment();
     void loadSubscription();
+    void loadMedicalHistory();
     void loadRecentActivity();
     void reloadTimelineForCurrentFilter();
 });
@@ -495,6 +850,536 @@ onMounted(() => {
                         </ul>
                     </CardContent>
                 </Card>
+                <Card class="md:col-span-3">
+                    <CardHeader>
+                        <CardTitle>Medical history</CardTitle>
+                        <CardDescription>
+                            View and update key parts of your medical history.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent class="space-y-4 text-sm text-muted-foreground">
+                        <div
+                            v-if="loadingMedicalHistory"
+                            class="flex items-center space-x-2"
+                        >
+                            <Spinner class="h-4 w-4" />
+                            <span>Loading medical history…</span>
+                        </div>
+                        <p
+                            v-else-if="medicalHistoryError"
+                            class="text-sm text-destructive"
+                        >
+                            {{ medicalHistoryError }}
+                        </p>
+                        <p v-else-if="!medicalHistory">
+                            No medical history recorded yet.
+                        </p>
+                        <div v-else class="space-y-4">
+                            <div class="space-y-2">
+                                <div class="flex items-center justify-between">
+                                    <p class="font-semibold text-foreground">Allergies</p>
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="outline"
+                                        @click="showAllergyForm = !showAllergyForm"
+                                    >
+                                        {{ showAllergyForm ? 'Cancel' : 'Add' }}
+                                    </Button>
+                                </div>
+                                <p
+                                    v-if="allergyError"
+                                    class="text-xs text-destructive"
+                                >
+                                    {{ allergyError }}
+                                </p>
+                                <form
+                                    v-if="showAllergyForm"
+                                    class="space-y-2"
+                                    @submit.prevent="submitAllergy"
+                                >
+                                    <div class="space-y-1">
+                                        <Label for="self-allergen">Allergen</Label>
+                                        <Input
+                                            id="self-allergen"
+                                            v-model="allergyForm.allergen"
+                                            type="text"
+                                            required
+                                        />
+                                    </div>
+                                    <div class="space-y-1">
+                                        <Label for="self-reaction">Reaction</Label>
+                                        <Input
+                                            id="self-reaction"
+                                            v-model="allergyForm.reaction"
+                                            type="text"
+                                        />
+                                    </div>
+                                    <div class="space-y-1">
+                                        <Label for="self-severity">Severity</Label>
+                                        <Input
+                                            id="self-severity"
+                                            v-model="allergyForm.severity"
+                                            type="text"
+                                        />
+                                    </div>
+                                    <div class="space-y-1">
+                                        <Label for="self-allergy-notes">Notes</Label>
+                                        <Input
+                                            id="self-allergy-notes"
+                                            v-model="allergyForm.notes"
+                                            type="text"
+                                        />
+                                    </div>
+                                    <div class="flex justify-end">
+                                        <Button
+                                            type="submit"
+                                            size="sm"
+                                            :disabled="submittingAllergy"
+                                        >
+                                            <Spinner
+                                                v-if="submittingAllergy"
+                                                class="mr-2 h-4 w-4"
+                                            />
+                                            <span v-if="submittingAllergy">Saving…</span>
+                                            <span v-else>Save allergy</span>
+                                        </Button>
+                                    </div>
+                                </form>
+                                <ul
+                                    v-if="medicalHistory.allergies.length"
+                                    class="space-y-1 text-xs"
+                                >
+                                    <li
+                                        v-for="allergy in medicalHistory.allergies"
+                                        :key="allergy.id"
+                                    >
+                                        <span class="font-medium text-foreground">
+                                            {{ allergy.allergen || 'Unknown allergen' }}
+                                        </span>
+                                        <span v-if="allergy.reaction">
+                                            – {{ allergy.reaction }}
+                                        </span>
+                                        <span
+                                            v-if="allergy.severity"
+                                            class="ml-1 uppercase"
+                                        >
+                                            ({{ allergy.severity }})
+                                        </span>
+                                        <span
+                                            v-if="allergy.notes"
+                                            class="block text-muted-foreground"
+                                        >
+                                            {{ allergy.notes }}
+                                        </span>
+                                    </li>
+                                </ul>
+                                <p v-else class="text-xs text-muted-foreground">
+                                    No allergies recorded.
+                                </p>
+                            </div>
+
+                            <div class="space-y-2">
+                                <div class="flex items-center justify-between">
+                                    <p class="font-semibold text-foreground">Conditions</p>
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="outline"
+                                        @click="showConditionForm = !showConditionForm"
+                                    >
+                                        {{ showConditionForm ? 'Cancel' : 'Add' }}
+                                    </Button>
+                                </div>
+                                <p
+                                    v-if="conditionError"
+                                    class="text-xs text-destructive"
+                                >
+                                    {{ conditionError }}
+                                </p>
+                                <form
+                                    v-if="showConditionForm"
+                                    class="space-y-2"
+                                    @submit.prevent="submitCondition"
+                                >
+                                    <div class="space-y-1">
+                                        <Label for="self-condition-name">Condition</Label>
+                                        <Input
+                                            id="self-condition-name"
+                                            v-model="conditionForm.condition_name"
+                                            type="text"
+                                            required
+                                        />
+                                    </div>
+                                    <div class="space-y-1">
+                                        <Label for="self-diagnosed-at">Diagnosed at</Label>
+                                        <Input
+                                            id="self-diagnosed-at"
+                                            v-model="conditionForm.diagnosed_at"
+                                            type="date"
+                                        />
+                                    </div>
+                                    <div class="flex flex-wrap gap-4 text-xs">
+                                        <label class="inline-flex items-center gap-2">
+                                            <input
+                                                v-model="conditionForm.had_condition_before"
+                                                type="checkbox"
+                                            >
+                                            <span>Had condition before</span>
+                                        </label>
+                                        <label class="inline-flex items-center gap-2">
+                                            <input
+                                                v-model="conditionForm.is_chronic"
+                                                type="checkbox"
+                                            >
+                                            <span>Chronic</span>
+                                        </label>
+                                    </div>
+                                    <div class="space-y-1">
+                                        <Label for="self-condition-notes">Notes</Label>
+                                        <Input
+                                            id="self-condition-notes"
+                                            v-model="conditionForm.notes"
+                                            type="text"
+                                        />
+                                    </div>
+                                    <div class="flex justify-end">
+                                        <Button
+                                            type="submit"
+                                            size="sm"
+                                            :disabled="submittingCondition"
+                                        >
+                                            <Spinner
+                                                v-if="submittingCondition"
+                                                class="mr-2 h-4 w-4"
+                                            />
+                                            <span v-if="submittingCondition">Saving…</span>
+                                            <span v-else>Save condition</span>
+                                        </Button>
+                                    </div>
+                                </form>
+                                <ul
+                                    v-if="medicalHistory.conditions.length"
+                                    class="space-y-1 text-xs"
+                                >
+                                    <li
+                                        v-for="condition in medicalHistory.conditions"
+                                        :key="condition.id"
+                                    >
+                                        <span class="font-medium text-foreground">
+                                            {{ condition.condition_name || 'Condition' }}
+                                        </span>
+                                        <span
+                                            v-if="condition.diagnosed_at"
+                                            class="ml-1 text-muted-foreground"
+                                        >
+                                            (diagnosed {{ formatDate(condition.diagnosed_at) }})
+                                        </span>
+                                        <span class="block text-muted-foreground">
+                                            <span v-if="condition.had_condition_before">Had before. </span>
+                                            <span v-if="condition.is_chronic">Chronic.</span>
+                                            <span v-if="condition.notes">
+                                                {{ condition.notes }}
+                                            </span>
+                                        </span>
+                                    </li>
+                                </ul>
+                                <p v-else class="text-xs text-muted-foreground">
+                                    No conditions recorded.
+                                </p>
+                            </div>
+
+                            <div class="space-y-2">
+                                <div class="flex items-center justify-between">
+                                    <p class="font-semibold text-foreground">Medications</p>
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="outline"
+                                        @click="showMedicationForm = !showMedicationForm"
+                                    >
+                                        {{ showMedicationForm ? 'Cancel' : 'Add' }}
+                                    </Button>
+                                </div>
+                                <p
+                                    v-if="medicationError"
+                                    class="text-xs text-destructive"
+                                >
+                                    {{ medicationError }}
+                                </p>
+                                <form
+                                    v-if="showMedicationForm"
+                                    class="space-y-2"
+                                    @submit.prevent="submitMedication"
+                                >
+                                    <div class="space-y-1">
+                                        <Label for="self-medication-id">Medication ID</Label>
+                                        <Input
+                                            id="self-medication-id"
+                                            v-model="medicationForm.medication_id"
+                                            type="number"
+                                            min="1"
+                                            required
+                                        />
+                                    </div>
+                                    <div class="space-y-1">
+                                        <Label for="self-dosage">Dosage</Label>
+                                        <Input
+                                            id="self-dosage"
+                                            v-model="medicationForm.dosage"
+                                            type="text"
+                                            required
+                                        />
+                                    </div>
+                                    <div class="space-y-1">
+                                        <Label for="self-frequency">Frequency</Label>
+                                        <Input
+                                            id="self-frequency"
+                                            v-model="medicationForm.frequency"
+                                            type="text"
+                                            required
+                                        />
+                                    </div>
+                                    <div class="grid gap-2 md:grid-cols-2">
+                                        <div class="space-y-1">
+                                            <Label for="self-start-date">Start date</Label>
+                                            <Input
+                                                id="self-start-date"
+                                                v-model="medicationForm.start_date"
+                                                type="date"
+                                            />
+                                        </div>
+                                        <div class="space-y-1">
+                                            <Label for="self-end-date">End date</Label>
+                                            <Input
+                                                id="self-end-date"
+                                                v-model="medicationForm.end_date"
+                                                type="date"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div class="space-y-1">
+                                        <Label for="self-medication-notes">Notes</Label>
+                                        <Input
+                                            id="self-medication-notes"
+                                            v-model="medicationForm.notes"
+                                            type="text"
+                                        />
+                                    </div>
+                                    <div class="flex justify-end">
+                                        <Button
+                                            type="submit"
+                                            size="sm"
+                                            :disabled="submittingMedication"
+                                        >
+                                            <Spinner
+                                                v-if="submittingMedication"
+                                                class="mr-2 h-4 w-4"
+                                            />
+                                            <span v-if="submittingMedication">Saving…</span>
+                                            <span v-else>Save medication</span>
+                                        </Button>
+                                    </div>
+                                </form>
+                                <ul
+                                    v-if="medicalHistory.medications.length"
+                                    class="space-y-1 text-xs"
+                                >
+                                    <li
+                                        v-for="medication in medicalHistory.medications"
+                                        :key="medication.id"
+                                    >
+                                        <span class="font-medium text-foreground">
+                                            {{ medication.medication_name || `Medication #${medication.medication_id}` }}
+                                        </span>
+                                        <span class="block text-muted-foreground">
+                                            <span v-if="medication.dosage">
+                                                {{ medication.dosage }}
+                                            </span>
+                                            <span v-if="medication.frequency">
+                                                · {{ medication.frequency }}
+                                            </span>
+                                            <span v-if="medication.start_date">
+                                                · From {{ formatDate(medication.start_date) }}
+                                            </span>
+                                            <span v-if="medication.end_date">
+                                                · Until {{ formatDate(medication.end_date) }}
+                                            </span>
+                                        </span>
+                                        <span
+                                            v-if="medication.notes"
+                                            class="block text-muted-foreground"
+                                        >
+                                            {{ medication.notes }}
+                                        </span>
+                                    </li>
+                                </ul>
+                                <p v-else class="text-xs text-muted-foreground">
+                                    No medications recorded.
+                                </p>
+                            </div>
+
+                            <div class="space-y-2">
+                                <div class="flex items-center justify-between">
+                                    <p class="font-semibold text-foreground">Visit summary</p>
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="outline"
+                                        @click="showVisitSummaryForm = !showVisitSummaryForm"
+                                    >
+                                        {{ showVisitSummaryForm ? 'Cancel' : 'Edit summary' }}
+                                    </Button>
+                                </div>
+                                <p
+                                    v-if="visitSummaryError"
+                                    class="text-xs text-destructive"
+                                >
+                                    {{ visitSummaryError }}
+                                </p>
+                                <div class="space-y-1 text-xs text-muted-foreground">
+                                    <p>
+                                        <span class="font-medium text-foreground">Surgical history:</span>
+                                        <span v-if="medicalHistory.surgical_history">
+                                            <span v-if="medicalHistory.surgical_history.past_injuries">
+                                                Past injuries;
+                                            </span>
+                                            <span v-if="medicalHistory.surgical_history.surgery">
+                                                past surgeries.
+                                            </span>
+                                            <span
+                                                v-if="medicalHistory.surgical_history.past_injuries_details"
+                                            >
+                                                {{ medicalHistory.surgical_history.past_injuries_details }}
+                                            </span>
+                                            <span
+                                                v-if="medicalHistory.surgical_history.surgery_details"
+                                            >
+                                                {{ medicalHistory.surgical_history.surgery_details }}
+                                            </span>
+                                            <span
+                                                v-if="medicalHistory.surgical_history.chronic_conditions_details"
+                                            >
+                                                {{ medicalHistory.surgical_history.chronic_conditions_details }}
+                                            </span>
+                                        </span>
+                                        <span v-else>No surgical history recorded yet.</span>
+                                    </p>
+                                    <p>
+                                        <span class="font-medium text-foreground">Family history:</span>
+                                        <span v-if="medicalHistory.family_history">
+                                            <span>
+                                                Chronic pain in family:
+                                                {{ medicalHistory.family_history.chronic_pain ? 'yes' : 'no' }}.
+                                            </span>
+                                            <span
+                                                v-if="medicalHistory.family_history.chronic_pain_details"
+                                            >
+                                                {{ medicalHistory.family_history.chronic_pain_details }}
+                                            </span>
+                                            <span
+                                                v-if="medicalHistory.family_history.conditions.length"
+                                            >
+                                                Conditions:
+                                                {{ medicalHistory.family_history.conditions.map((c) => c.name).join(', ') }}
+                                            </span>
+                                        </span>
+                                        <span v-else>No family history recorded yet.</span>
+                                    </p>
+                                </div>
+                                <form
+                                    v-if="showVisitSummaryForm"
+                                    class="space-y-2"
+                                    @submit.prevent="submitVisitSummary"
+                                >
+                                    <div class="grid gap-2 md:grid-cols-2">
+                                        <div class="space-y-1">
+                                            <label class="inline-flex items-center gap-2 text-xs">
+                                                <input
+                                                    v-model="visitSummaryForm.past_injuries"
+                                                    type="checkbox"
+                                                >
+                                                <span>Past injuries</span>
+                                            </label>
+                                            <Label for="self-past-injuries-details">Details</Label>
+                                            <Input
+                                                id="self-past-injuries-details"
+                                                v-model="visitSummaryForm.past_injuries_details"
+                                                type="text"
+                                            />
+                                        </div>
+                                        <div class="space-y-1">
+                                            <label class="inline-flex items-center gap-2 text-xs">
+                                                <input
+                                                    v-model="visitSummaryForm.surgery"
+                                                    type="checkbox"
+                                                >
+                                                <span>Past surgeries</span>
+                                            </label>
+                                            <Label for="self-surgery-details">Details</Label>
+                                            <Input
+                                                id="self-surgery-details"
+                                                v-model="visitSummaryForm.surgery_details"
+                                                type="text"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div class="space-y-1">
+                                        <Label for="self-chronic-conditions-details">
+                                            Chronic conditions details
+                                        </Label>
+                                        <Input
+                                            id="self-chronic-conditions-details"
+                                            v-model="visitSummaryForm.chronic_conditions_details"
+                                            type="text"
+                                        />
+                                    </div>
+                                    <div class="space-y-1">
+                                        <label class="inline-flex items-center gap-2 text-xs">
+                                            <input
+                                                v-model="visitSummaryForm.chronic_pain"
+                                                type="checkbox"
+                                            >
+                                            <span>Chronic pain in family</span>
+                                        </label>
+                                        <Label for="self-chronic-pain-details">Details</Label>
+                                        <Input
+                                            id="self-chronic-pain-details"
+                                            v-model="visitSummaryForm.chronic_pain_details"
+                                            type="text"
+                                        />
+                                    </div>
+                                    <div class="space-y-1">
+                                        <Label for="self-family-conditions">
+                                            Family conditions (one per line)
+                                        </Label>
+                                        <textarea
+                                            id="self-family-conditions"
+                                            v-model="visitSummaryForm.family_history_conditions_text"
+                                            rows="3"
+                                            class="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                        />
+                                    </div>
+                                    <div class="flex justify-end">
+                                        <Button
+                                            type="submit"
+                                            size="sm"
+                                            :disabled="submittingVisitSummary"
+                                        >
+                                            <Spinner
+                                                v-if="submittingVisitSummary"
+                                                class="mr-2 h-4 w-4"
+                                            />
+                                            <span v-if="submittingVisitSummary">Saving…</span>
+                                            <span v-else>Save summary</span>
+                                        </Button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+
                 <Card>
                     <CardHeader>
                         <CardTitle>Recent activity</CardTitle>
