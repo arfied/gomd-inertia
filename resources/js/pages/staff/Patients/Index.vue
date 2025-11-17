@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Spinner } from '@/components/ui/spinner'
+import { Badge } from '@/components/ui/badge'
 
 const breadcrumbs: BreadcrumbItem[] = [
   { title: 'Dashboard', href: '/dashboard' },
@@ -54,6 +55,26 @@ interface PatientDetail extends PatientListItem {
   demographics: PatientDemographics | null
   enrollment: PatientEnrollmentDetail | null
   subscription: PatientSubscriptionDetail | null
+}
+
+type BadgeVariant = 'default' | 'secondary' | 'destructive' | 'outline'
+
+function statusBadgeVariant(status: string | null): BadgeVariant {
+  if (!status) return 'outline'
+  const s = status.toLowerCase()
+  if (s === 'active') return 'default'
+  if (s.includes('trial') || s.startsWith('pending')) return 'secondary'
+  if (s === 'cancelled' || s === 'canceled' || s === 'expired') return 'destructive'
+  return 'outline'
+}
+
+function subscriptionBadgeVariant(status: string | null): BadgeVariant {
+  if (!status) return 'outline'
+  const s = status.toLowerCase()
+  if (s === 'active') return 'default'
+  if (s === 'pending_payment') return 'secondary'
+  if (s === 'cancelled' || s === 'canceled' || s === 'expired') return 'destructive'
+  return 'outline'
 }
 
 const patients = ref<PatientListItem[]>([])
@@ -243,8 +264,14 @@ onMounted(() => {
                 <tr v-for="patient in patients" :key="patient.patient_uuid" class="border-b last:border-b-0">
                   <td class="px-3 py-2 font-medium text-foreground">{{ patient.fname }} {{ patient.lname }}</td>
                   <td class="px-3 py-2">{{ patient.email }}</td>
-                  <td class="px-3 py-2 capitalize">{{ patient.status || 'unknown' }}</td>
-                  <td class="px-3 py-2 text-xs text-muted-foreground">{{ patient.enrolled_at }}</td>
+                  <td class="px-3 py-2">
+                    <Badge :variant="statusBadgeVariant(patient.status)" class="capitalize">
+                      {{ patient.status || 'unknown' }}
+                    </Badge>
+                  </td>
+                  <td class="px-3 py-2 text-xs text-muted-foreground">
+                    {{ formatDate(patient.enrolled_at) || '—' }}
+                  </td>
                   <td class="px-3 py-2 text-right">
                     <Button type="button" size="sm" variant="outline" @click="loadDetail(patient.patient_uuid)">View</Button>
                   </td>
@@ -282,11 +309,11 @@ onMounted(() => {
                 {{ selectedPatient.fname }} {{ selectedPatient.lname }}
               </p>
               <p>{{ selectedPatient.email }}</p>
-              <p>
-                Status:
-                <span class="capitalize">
+              <p class="flex items-center gap-1">
+                <span>Status:</span>
+                <Badge :variant="statusBadgeVariant(selectedPatient.status)" class="capitalize">
                   {{ selectedPatient.status || 'unknown' }}
-                </span>
+                </Badge>
               </p>
             </div>
 
@@ -343,11 +370,14 @@ onMounted(() => {
                 {{ selectedPatient.subscription.plan_name || 'TeleMed Pro plan' }}
                 <span v-if="selectedPatient.subscription.is_trial">(trial)</span>
               </p>
-              <p>
-                Status:
-                <span class="capitalize">
+              <p class="flex items-center gap-1">
+                <span>Status:</span>
+                <Badge
+                  :variant="subscriptionBadgeVariant(selectedPatient.subscription.status)"
+                  class="capitalize"
+                >
                   {{ selectedPatient.subscription.status }}
-                </span>
+                </Badge>
               </p>
               <p v-if="selectedPatient.subscription.starts_at || selectedPatient.subscription.ends_at">
                 <span v-if="selectedPatient.subscription.starts_at">
