@@ -23,20 +23,37 @@ interface PatientListItem {
   enrolled_at: string | null
 }
 
+interface PatientDemographics {
+  gender: string | null
+  dob: string | null
+  address1: string | null
+  address2: string | null
+  city: string | null
+  state: string | null
+  zip: string | null
+  phone: string | null
+  mobile_phone: string | null
+}
+
+interface PatientEnrollmentDetail {
+  source: string | null
+  metadata: Record<string, unknown> | null
+  enrolled_at: string | null
+}
+
+interface PatientSubscriptionDetail {
+  id: number | null
+  status: string
+  plan_name: string | null
+  is_trial: boolean
+  starts_at: string | null
+  ends_at: string | null
+}
+
 interface PatientDetail extends PatientListItem {
-  demographics: { gender: string | null; dob: string | null } | null
-  enrollment: {
-    source: string | null
-    metadata: Record<string, unknown> | null
-    enrolled_at: string | null
-  } | null
-  subscription: {
-    status: string
-    plan_name: string | null
-    is_trial: boolean
-    starts_at: string | null
-    ends_at: string | null
-  } | null
+  demographics: PatientDemographics | null
+  enrollment: PatientEnrollmentDetail | null
+  subscription: PatientSubscriptionDetail | null
 }
 
 const patients = ref<PatientListItem[]>([])
@@ -57,6 +74,20 @@ const detailError = ref<string | null>(null)
 
 const hasNextPage = computed(() => !!meta.value?.next_page_url)
 const hasPrevPage = computed(() => !!meta.value?.prev_page_url)
+
+function formatDate(iso: string | null): string {
+  if (!iso) return ''
+  const date = new Date(iso)
+  if (Number.isNaN(date.getTime())) return iso
+  return date.toLocaleDateString()
+}
+
+function formatDateTime(iso: string | null): string {
+  if (!iso) return ''
+  const date = new Date(iso)
+  if (Number.isNaN(date.getTime())) return iso
+  return date.toLocaleString()
+}
 
 function buildQuery(base: string): string {
   const params = new URLSearchParams()
@@ -245,12 +276,91 @@ onMounted(() => {
           </div>
           <p v-else-if="detailError" class="text-destructive">{{ detailError }}</p>
           <p v-else-if="!selectedPatient">Select a patient to view details.</p>
-          <div v-else class="space-y-1 text-xs">
-            <p class="text-sm font-medium text-foreground">{{ selectedPatient.fname }} {{ selectedPatient.lname }}</p>
-            <p>{{ selectedPatient.email }}</p>
-            <p>Status: <span class="capitalize">{{ selectedPatient.status || 'unknown' }}</span></p>
-            <p v-if="selectedPatient.demographics?.dob">DOB: {{ selectedPatient.demographics.dob }}</p>
-            <p v-if="selectedPatient.subscription">Plan: {{ selectedPatient.subscription.plan_name || 'TeleMed Pro plan' }}</p>
+          <div v-else class="space-y-2 text-xs">
+            <div>
+              <p class="text-sm font-medium text-foreground">
+                {{ selectedPatient.fname }} {{ selectedPatient.lname }}
+              </p>
+              <p>{{ selectedPatient.email }}</p>
+              <p>
+                Status:
+                <span class="capitalize">
+                  {{ selectedPatient.status || 'unknown' }}
+                </span>
+              </p>
+            </div>
+
+            <div v-if="selectedPatient.enrollment">
+              <p>
+                Enrolled:
+                <span v-if="selectedPatient.enrollment.enrolled_at">
+                  {{ formatDateTime(selectedPatient.enrollment.enrolled_at) }}
+                </span>
+                <span v-else>
+                  (date unknown)
+                </span>
+              </p>
+              <p>
+                Source:
+                <span>{{ selectedPatient.enrollment.source || 'unknown' }}</span>
+              </p>
+            </div>
+
+            <div v-if="selectedPatient.demographics">
+              <p v-if="selectedPatient.demographics.dob">
+                DOB: {{ formatDate(selectedPatient.demographics.dob) }}
+              </p>
+              <p v-if="selectedPatient.demographics.gender">
+                Gender: {{ selectedPatient.demographics.gender }}
+              </p>
+              <p v-if="selectedPatient.demographics.address1">
+                Address:
+                {{ selectedPatient.demographics.address1 }}
+                <span v-if="selectedPatient.demographics.address2">
+                  , {{ selectedPatient.demographics.address2 }}
+                </span>
+              </p>
+              <p v-if="selectedPatient.demographics.city || selectedPatient.demographics.state || selectedPatient.demographics.zip">
+                {{ selectedPatient.demographics.city }}
+                <span v-if="selectedPatient.demographics.state">
+                  , {{ selectedPatient.demographics.state }}
+                </span>
+                <span v-if="selectedPatient.demographics.zip">
+                  {{ ' ' + selectedPatient.demographics.zip }}
+                </span>
+              </p>
+              <p v-if="selectedPatient.demographics.phone">
+                Phone: {{ selectedPatient.demographics.phone }}
+              </p>
+              <p v-if="selectedPatient.demographics.mobile_phone">
+                Mobile: {{ selectedPatient.demographics.mobile_phone }}
+              </p>
+            </div>
+
+            <div v-if="selectedPatient.subscription">
+              <p>
+                Plan:
+                {{ selectedPatient.subscription.plan_name || 'TeleMed Pro plan' }}
+                <span v-if="selectedPatient.subscription.is_trial">(trial)</span>
+              </p>
+              <p>
+                Status:
+                <span class="capitalize">
+                  {{ selectedPatient.subscription.status }}
+                </span>
+              </p>
+              <p v-if="selectedPatient.subscription.starts_at || selectedPatient.subscription.ends_at">
+                <span v-if="selectedPatient.subscription.starts_at">
+                  {{ formatDate(selectedPatient.subscription.starts_at) }}
+                </span>
+                <span v-if="selectedPatient.subscription.starts_at && selectedPatient.subscription.ends_at">
+                  –
+                </span>
+                <span v-if="selectedPatient.subscription.ends_at">
+                  {{ formatDate(selectedPatient.subscription.ends_at) }}
+                </span>
+              </p>
+            </div>
           </div>
         </CardContent>
       </Card>
