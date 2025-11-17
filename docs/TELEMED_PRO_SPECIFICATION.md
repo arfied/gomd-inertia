@@ -597,6 +597,15 @@ Across all contexts, domain aggregates reference `user_id` from the identity lay
 
 ---
 
+### Pagination Strategy
+
+To keep backend performance predictable (especially on shared cPanel/MySQL), all API endpoints that support pagination MUST:
+
+- Use Laravel's `simplePaginate()` instead of `paginate()`. The main list query MUST NOT calculate total row counts.
+- Expose a separate `GET /.../count` (or equivalent) endpoint that returns `{ "count": <int> }` for UIs that need totals (e.g. a dedicated "Count" button).
+- Avoid relying on `total`, `last_page`, etc. from pagination metadata; the UI should only rely on cursors/next/previous links from `simplePaginate()`.
+
+Existing and future list endpoints (patient lists, document lists, dashboards, etc.) must follow this pattern.
 ## Feature Implementation Details
 
 ### 1. Event-Driven Patient Dashboard
@@ -622,7 +631,7 @@ interface PatientCard {
 ```
 
 **UI components used (example):**
-- `DataTable` - Patient list with sorting, filtering, pagination
+- `DataTable` - Patient list with sorting, filtering, simple pagination (backed by Laravel `simplePaginate()` + separate `/.../count` endpoint)
 - `Timeline` - Event stream visualization
 - `Card` - Patient information cards
 - `Tag` - Status indicators and risk flags
