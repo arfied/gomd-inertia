@@ -386,6 +386,29 @@ become event-driven as more projections are added.
 Next to the enrollment card, the dashboard renders:
 
 - A **"Next steps"** card that explains how the dashboard will evolve (static content).
+- A **"Subscription"** card that surfaces the current TeleMed Pro subscription for the
+  authenticated user:
+  - **Query**: `App\\Application\\Patient\\Queries\\GetPatientSubscriptionByUserId`
+  - **Handler**: `GetPatientSubscriptionByUserIdHandler`
+  - **Finder**: `PatientSubscriptionFinder` (implemented by `EloquentPatientSubscriptionFinder`)
+  - **HTTP route**: `GET /patient/subscription`
+  - **Controller**: `App\\Http\\Controllers\\PatientSubscriptionController@show`
+  - The controller uses the `QueryBus` with `GetPatientSubscriptionByUserId` and
+    returns a JSON document of the form:
+
+    ```json
+    {
+      "subscription": null | {
+        "id": 1,
+        "status": "active",
+        "plan_name": "TeleMed Pro Monthly",
+        "is_trial": false,
+        "starts_at": "2024-09-01T00:00:00.000000Z",
+        "ends_at": "2024-10-01T00:00:00.000000Z"
+      }
+    }
+    ```
+
 - A **"Recent activity"** card that is backed by a read model built on the existing
   `Activity` table and a dedicated endpoint:
   - **Query**: `App\\Application\\Patient\\Queries\\GetRecentPatientActivityByUserId`
