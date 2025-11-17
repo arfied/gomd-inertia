@@ -43,6 +43,19 @@ interface RecentActivityEntry {
     created_at: string | null;
 }
 
+interface PatientDocument {
+    id: number;
+    patient_id: number | null;
+    doctor_id: number | null;
+    record_type: string | null;
+    description: string | null;
+    record_date: string | null;
+    file_path: string | null;
+    created_at: string | null;
+    updated_at: string | null;
+}
+
+
 interface TimelineEventEntry {
     id: number;
     aggregate_uuid: string;
@@ -131,6 +144,26 @@ const startingEnrollment = ref(false);
 const subscription = ref<PatientSubscription | null>(null);
 const loadingSubscription = ref(true);
 const subscriptionError = ref<string | null>(null);
+
+const documents = ref<PatientDocument[]>([]);
+const loadingDocuments = ref(true);
+const documentsError = ref<string | null>(null);
+
+const showUploadForm = ref(false);
+const uploadingDocument = ref(false);
+const uploadError = ref<string | null>(null);
+
+const uploadForm = ref<{
+    record_type: string;
+    description: string;
+    record_date: string;
+    file: File | null;
+}>({
+    record_type: '',
+    description: '',
+    record_date: '',
+    file: null,
+});
 
 const recentActivity = ref<RecentActivityEntry[]>([]);
 const loadingRecentActivity = ref(true);
@@ -607,6 +640,114 @@ async function loadEnrollment() {
         loadingEnrollment.value = false;
     }
 }
+async function loadDocuments(): Promise<void> {
+    try {
+        const response = await fetch('/patient/documents', {
+            headers: {
+                Accept: 'application/json',
+            },
+            credentials: 'same-origin',
+        });
+
+        if (!response.ok) {
+            documentsError.value = `Failed to load documents (${response.status})`;
+            return;
+        }
+
+        const data = (await response.json()) as {
+            documents: PatientDocument[] | null;
+        };
+
+        documents.value = data.documents ?? [];
+    } catch {
+        documentsError.value =
+            'A network error occurred while loading your documents.';
+    } finally {
+        loadingDocuments.value = false;
+    }
+}
+
+function onDocumentFileSelected(event: Event): void {
+    const target = event.target as HTMLInputElement | null;
+
+    if (!target || !target.files || target.files.length === 0) {
+        uploadForm.value.file = null;
+        return;
+    }
+
+    uploadForm.value.file = target.files[0] ?? null;
+}
+
+async function submitDocument(): Promise<void> {
+    if (uploadingDocument.value) {
+        return;
+    }
+
+    if (!uploadForm.value.file) {
+        uploadError.value = 'Please choose a file to upload.';
+        return;
+    }
+
+    uploadingDocument.value = true;
+    uploadError.value = null;
+
+    try {
+        const xsrfToken = getXsrfToken();
+
+        const formData = new FormData();
+        formData.append('record_type', uploadForm.value.record_type);
+        formData.append('description', uploadForm.value.description);
+
+        if (uploadForm.value.record_date) {
+            formData.append('record_date', uploadForm.value.record_date);
+        }
+
+        formData.append('file', uploadForm.value.file);
+
+        const response = await fetch('/patient/documents', {
+            method: 'POST',
+            headers: {
+                Accept: 'application/json',
+                ...(xsrfToken ? { 'X-XSRF-TOKEN': xsrfToken } : {}),
+            },
+            credentials: 'same-origin',
+            body: formData,
+        });
+
+        if (!response.ok) {
+            uploadError.value = await extractErrorMessage(
+                'Failed to upload document.',
+                response,
+            );
+            return;
+        }
+
+        const data = (await response.json()) as { document: PatientDocument | null };
+
+        if (data.document) {
+            documents.value = [
+                data.document,
+                ...documents.value.filter((existing) => existing.id !== data.document!.id),
+            ];
+        } else {
+            await loadDocuments();
+        }
+
+        showUploadForm.value = false;
+        uploadForm.value = {
+            record_type: '',
+            description: '',
+            record_date: '',
+            file: null,
+        };
+    } catch {
+        uploadError.value =
+            'A network error occurred while uploading your document.';
+    } finally {
+        uploadingDocument.value = false;
+    }
+}
+
 
 async function loadSubscription() {
     try {
@@ -712,6 +853,7 @@ async function reloadTimelineForCurrentFilter() {
 onMounted(() => {
     void loadEnrollment();
     void loadSubscription();
+    void loadDocuments();
     void loadMedicalHistory();
     void loadRecentActivity();
     void reloadTimelineForCurrentFilter();
@@ -834,19 +976,143 @@ onMounted(() => {
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Next steps</CardTitle>
+                        <CardTitle>Documents</CardTitle>
                         <CardDescription>
-                            How this dashboard will evolve as more patient features are added.
+                            Upload and manage your medical documents.
                         </CardDescription>
                     </CardHeader>
-                    <CardContent class="space-y-2 text-sm text-muted-foreground">
-                        <p>
-                            Over time, this area will surface:
+                    <CardContent class="space-y-3 text-sm text-muted-foreground">
+                        <div class="flex items-center justify-between">
+                            <p class="font-medium text-foreground">
+                                Your documents
+                            </p>
+                            <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                @click="showUploadForm = !showUploadForm"
+                            >
+                                {{ showUploadForm ? 'Cancel' : 'Upload' }}
+                            </Button>
+                        </div>
+                        <p
+                            v-if="uploadError"
+                            class="text-xs text-destructive"
+                        >
+                            {{ uploadError }}
                         </p>
-                        <ul class="list-disc space-y-1 pl-4">
-                            <li>Upcoming telemedicine visits and tasks.</li>
-                            <li>Key alerts about your medications and care plan.</li>
-                            <li>Shortcuts to documents and recent activity.</li>
+                        <form
+                            v-if="showUploadForm"
+                            class="space-y-2"
+                            @submit.prevent="submitDocument"
+                        >
+                            <div class="space-y-1">
+                                <Label for="document-record-type">Type</Label>
+                                <Input
+                                    id="document-record-type"
+                                    v-model="uploadForm.record_type"
+                                    type="text"
+                                    required
+                                />
+                            </div>
+                            <div class="space-y-1">
+                                <Label for="document-description">Description</Label>
+                                <Input
+                                    id="document-description"
+                                    v-model="uploadForm.description"
+                                    type="text"
+                                    required
+                                />
+                            </div>
+                            <div class="space-y-1">
+                                <Label for="document-record-date">Date</Label>
+                                <Input
+                                    id="document-record-date"
+                                    v-model="uploadForm.record_date"
+                                    type="date"
+                                />
+                            </div>
+                            <div class="space-y-1">
+                                <Label for="document-file">File</Label>
+                                <Input
+                                    id="document-file"
+                                    type="file"
+                                    required
+                                    @change="onDocumentFileSelected"
+                                />
+                            </div>
+                            <div class="flex justify-end">
+                                <Button
+                                    type="submit"
+                                    size="sm"
+                                    :disabled="uploadingDocument"
+                                >
+                                    <Spinner
+                                        v-if="uploadingDocument"
+                                        class="mr-2 h-4 w-4"
+                                    />
+                                    <span v-if="uploadingDocument">Uploading…</span>
+                                    <span v-else>Upload document</span>
+                                </Button>
+                            </div>
+                        </form>
+                        <div
+                            v-if="loadingDocuments"
+                            class="flex items-center space-x-2"
+                        >
+                            <Spinner class="h-4 w-4" />
+                            <span>Loading documents</span>
+                        </div>
+                        <p
+                            v-else-if="documentsError"
+                            class="text-sm text-destructive"
+                        >
+                            {{ documentsError }}
+                        </p>
+                        <p
+                            v-else-if="!documents.length"
+                            class="text-xs text-muted-foreground"
+                        >
+                            You haven't uploaded any documents yet.
+                        </p>
+                        <ul
+                            v-else
+                            class="space-y-1 text-xs"
+                        >
+                            <li
+                                v-for="document in documents"
+                                :key="document.id"
+                                class="flex items-center justify-between gap-2"
+                            >
+                                <div class="flex flex-col">
+                                    <span class="font-medium text-foreground">
+                                        {{ document.record_type || 'Document' }}
+                                    </span>
+                                    <span
+                                        v-if="document.description"
+                                        class="text-xs text-muted-foreground"
+                                    >
+                                        {{ document.description }}
+                                    </span>
+                                    <span
+                                        v-if="document.record_date"
+                                        class="text-xs text-muted-foreground"
+                                    >
+                                        {{ formatDate(document.record_date) }}
+                                    </span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <a
+                                        v-if="document.file_path"
+                                        :href="`/storage/${document.file_path}`"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        class="text-xs text-primary hover:underline"
+                                    >
+                                        View
+                                    </a>
+                                </div>
+                            </li>
                         </ul>
                     </CardContent>
                 </Card>
