@@ -12,13 +12,13 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
-import { type NavItem } from '@/types';
+import type { AppPageProps, NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
 import { BookOpen, Folder, LayoutGrid, Users } from 'lucide-vue-next';
 import AppLogo from './AppLogo.vue';
 import { computed } from 'vue';
 
-const page = usePage<{ auth: { user: { role?: string } } }>();
+const page = usePage<AppPageProps>();
 
 const mainNavItems = computed<NavItem[]>(() => {
     const items: NavItem[] = [
@@ -29,9 +29,13 @@ const mainNavItems = computed<NavItem[]>(() => {
         },
     ];
 
-    const role = page.props.auth.user.role ?? null;
+    const auth = page.props.auth;
+    const user = auth.user;
 
-    if (role === 'admin' || role === 'staff') {
+    const isStaffOrAdmin =
+        auth.isStaffOrAdmin ?? (user && (user.role === 'admin' || user.role === 'staff'));
+
+    if (isStaffOrAdmin) {
         items.push({
             title: 'Patients',
             href: '/dashboard/patients',

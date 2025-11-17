@@ -23,7 +23,12 @@ Route::get('dashboard', function () {
 
 Route::middleware('auth')->group(function () {
     Route::get('dashboard/patients', function (\Illuminate\Http\Request $request) {
-        abort_unless(in_array($request->user()->role, ['admin', 'staff'], true), 403);
+        $user = $request->user();
+
+        $isStaffOrAdmin = $user
+            && ($user->hasAnyRole(['admin', 'staff']) || in_array($user->role, ['admin', 'staff'], true));
+
+        abort_unless($isStaffOrAdmin, 403);
 
         return Inertia::render('staff/Patients/Index');
     })->name('dashboard.patients');

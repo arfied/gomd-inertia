@@ -21,7 +21,10 @@ class PatientListController extends Controller
     {
         $user = $request->user();
 
-        abort_unless(in_array($user->role, ['admin', 'staff'], true), 403);
+        abort_unless(
+            $user && ($user->hasAnyRole(['admin', 'staff']) || in_array($user->role, ['admin', 'staff'], true)),
+            403
+        );
 
         $search = $request->string('search')->toString();
         $perPage = (int) $request->input('per_page', 15);
@@ -65,7 +68,10 @@ class PatientListController extends Controller
     {
         $user = $request->user();
 
-        abort_unless(in_array($user->role, ['admin', 'staff'], true), 403);
+        abort_unless(
+            $user && ($user->hasAnyRole(['admin', 'staff']) || in_array($user->role, ['admin', 'staff'], true)),
+            403
+        );
 
         /** @var PatientEnrollment|null $enrollment */
         $enrollment = $queryBus->ask(
@@ -128,7 +134,10 @@ class PatientListController extends Controller
     {
         $user = $request->user();
 
-        abort_unless(in_array($user->role, ['admin', 'staff'], true), 403);
+        abort_unless(
+            $user && ($user->hasAnyRole(['admin', 'staff']) || in_array($user->role, ['admin', 'staff'], true)),
+            403
+        );
 
         $search = $request->string('search')->toString();
 
