@@ -1825,8 +1825,8 @@ const customPreset = {
 
 - [x] Order aggregate (`CreateOrder`, `FulfillOrder`, `CancelOrder`) and events, with projections into the legacy `medication_orders` table and read-side query endpoints for patient and staff order lists.
 - [x] Order fulfillment saga wired through event store and queues.
-- [ ] Medication catalog aggregates (`Medication`, `Condition`, `Formulary`) and events.
-- [ ] Medication search and formulary read models.
+- [x] Medication catalog aggregates (`Medication`, `Condition`, `Formulary`) and events.
+- [x] Medication search and formulary read models.
 - [ ] Patient order history timeline on patient and staff dashboards.
 - [x] Doctor-facing endpoint to create prescriptions for patient orders (event-sourced via `CreatePrescription` / `PrescriptionCreated`, projecting into the legacy `prescriptions` table).
 - [x] Linking prescriptions back to orders on `PrescriptionCreated` projection (sets `medication_orders.prescription_id`, updates status to `prescribed`, and notifies the patient).

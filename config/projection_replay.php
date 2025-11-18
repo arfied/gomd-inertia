@@ -36,6 +36,12 @@ return [
         'order_fulfillment_saga.failed' => App\Domain\Order\Events\OrderFulfillmentSagaFailed::class,
         'order_fulfillment_saga.completed' => App\Domain\Order\Events\OrderFulfillmentSagaCompleted::class,
         'prescription.created' => App\Domain\Prescription\Events\PrescriptionCreated::class,
+        'medication.created' => App\Domain\MedicationCatalog\Events\MedicationCreated::class,
+        'medication.updated' => App\Domain\MedicationCatalog\Events\MedicationUpdated::class,
+        'formulary.created' => App\Domain\MedicationCatalog\Events\FormularyCreated::class,
+        'formulary.updated' => App\Domain\MedicationCatalog\Events\FormularyUpdated::class,
+        'formulary.medication_added' => App\Domain\MedicationCatalog\Events\MedicationAddedToFormulary::class,
+        'formulary.medication_removed' => App\Domain\MedicationCatalog\Events\MedicationRemovedFromFormulary::class,
     ],
 
     'projections' => [
@@ -75,6 +81,16 @@ return [
         // Rebuilds the prescriptions projection over legacy prescriptions
         'prescription' => [
             'prescription.created',
+        ],
+
+        // Rebuilds the medication search index and medications read model
+        'medication-catalog' => [
+            'medication.created',
+            'medication.updated',
+            'formulary.created',
+            'formulary.updated',
+            'formulary.medication_added',
+            'formulary.medication_removed',
         ],
     ],
 ];
