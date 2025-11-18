@@ -8,8 +8,10 @@ use App\Domain\Order\Events\InventoryReserved;
 use App\Domain\Order\Events\InventoryReservationFailed;
 use App\Domain\Shared\Commands\Command;
 use App\Services\EventStoreContract;
+use App\Services\InventoryReservationService;
 use Illuminate\Contracts\Events\Dispatcher;
 use InvalidArgumentException;
+use Throwable;
 
 /**
  * ReserveInventoryHandler
@@ -25,6 +27,7 @@ class ReserveInventoryHandler implements CommandHandler
     public function __construct(
         private EventStoreContract $eventStore,
         private Dispatcher $events,
+        private InventoryReservationService $inventoryService,
     ) {
     }
 
@@ -34,34 +37,71 @@ class ReserveInventoryHandler implements CommandHandler
             throw new InvalidArgumentException('ReserveInventoryHandler can only handle ReserveInventory commands');
         }
 
-        // TODO: Implement inventory reservation logic
-        // This should call your inventory service/API to reserve medications
-        // Example:
-        // $inventoryService = app(InventoryService::class);
-        // $reservationResult = $inventoryService->reserve(
-        //     medications: $command->medications,
-        //     warehouseId: $command->warehouseId,
-        // );
+        try {
+            // Call inventory service to reserve medications
+            $reservationResult = $this->inventoryService->reserve(
+                medications: $command->medications,
+                warehouseId: $command->warehouseId,
+            );
 
-        // For now, we'll emit a success event
-        // In production, wrap this in try-catch and emit InventoryReservationFailed on error
-        $payload = [
-            'order_uuid' => $command->orderUuid,
-            'saga_uuid' => $command->sagaUuid,
-            'medications' => $command->medications,
-            'warehouse_id' => $command->warehouseId,
-            'reserved_at' => now()->toIso8601String(),
-            'status' => 'reserved',
-        ];
+            // Emit appropriate event based on result
+            if ($reservationResult['success']) {
+                $payload = [
+                    'order_uuid' => $command->orderUuid,
+                    'saga_uuid' => $command->sagaUuid,
+                    'medications' => $command->medications,
+                    'warehouse_id' => $command->warehouseId,
+                    'reservation_id' => $reservationResult['reservationId'],
+                    'reserved_at' => now()->toIso8601String(),
+                    'status' => 'reserved',
+                ];
 
-        $event = new InventoryReserved(
-            $command->orderUuid,
-            $payload,
-            array_merge($command->metadata, ['saga_uuid' => $command->sagaUuid])
-        );
+                $event = new InventoryReserved(
+                    $command->orderUuid,
+                    $payload,
+                    array_merge($command->metadata, ['saga_uuid' => $command->sagaUuid])
+                );
+            } else {
+                $payload = [
+                    'order_uuid' => $command->orderUuid,
+                    'saga_uuid' => $command->sagaUuid,
+                    'medications' => $command->medications,
+                    'warehouse_id' => $command->warehouseId,
+                    'reason' => $reservationResult['error'],
+                    'failed_at' => now()->toIso8601String(),
+                ];
 
-        $this->eventStore->store($event);
-        $this->events->dispatch($event);
+                $event = new InventoryReservationFailed(
+                    $command->orderUuid,
+                    $payload,
+                    array_merge($command->metadata, ['saga_uuid' => $command->sagaUuid])
+                );
+            }
+
+            $this->eventStore->store($event);
+            $this->events->dispatch($event);
+
+        } catch (Throwable $e) {
+            // Emit failure event on exception
+            $payload = [
+                'order_uuid' => $command->orderUuid,
+                'saga_uuid' => $command->sagaUuid,
+                'medications' => $command->medications,
+                'reason' => $e->getMessage(),
+                'failed_at' => now()->toIso8601String(),
+            ];
+
+            $event = new InventoryReservationFailed(
+                $command->orderUuid,
+                $payload,
+                array_merge($command->metadata, ['saga_uuid' => $command->sagaUuid, 'exception' => get_class($e)])
+            );
+
+            $this->eventStore->store($event);
+            $this->events->dispatch($event);
+
+            throw $e;
+        }
     }
 }
 

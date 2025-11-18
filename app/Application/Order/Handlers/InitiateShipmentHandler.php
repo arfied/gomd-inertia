@@ -8,8 +8,10 @@ use App\Domain\Order\Events\ShipmentInitiated;
 use App\Domain\Order\Events\ShipmentInitiationFailed;
 use App\Domain\Shared\Commands\Command;
 use App\Services\EventStoreContract;
+use App\Services\ShipmentInitiationService;
 use Illuminate\Contracts\Events\Dispatcher;
 use InvalidArgumentException;
+use Throwable;
 
 /**
  * InitiateShipmentHandler
@@ -25,6 +27,7 @@ class InitiateShipmentHandler implements CommandHandler
     public function __construct(
         private EventStoreContract $eventStore,
         private Dispatcher $events,
+        private ShipmentInitiationService $shipmentService,
     ) {
     }
 
@@ -34,36 +37,74 @@ class InitiateShipmentHandler implements CommandHandler
             throw new InvalidArgumentException('InitiateShipmentHandler can only handle InitiateShipment commands');
         }
 
-        // TODO: Implement shipment initiation logic
-        // This should call your shipping service/API to initiate shipment
-        // Example:
-        // $shippingService = app(ShippingService::class);
-        // $shipmentResult = $shippingService->initiate(
-        //     orderUuid: $command->orderUuid,
-        //     shippingAddress: $command->shippingAddress,
-        //     shippingMethod: $command->shippingMethod,
-        // );
+        try {
+            // Call shipping service to initiate shipment
+            $shipmentResult = $this->shipmentService->initiate(
+                orderUuid: $command->orderUuid,
+                shippingAddress: $command->shippingAddress,
+                shippingMethod: $command->shippingMethod,
+                trackingNumber: $command->trackingNumber,
+            );
 
-        // For now, we'll emit a success event
-        // In production, wrap this in try-catch and emit ShipmentInitiationFailed on error
-        $payload = [
-            'order_uuid' => $command->orderUuid,
-            'saga_uuid' => $command->sagaUuid,
-            'shipping_address' => $command->shippingAddress,
-            'shipping_method' => $command->shippingMethod,
-            'tracking_number' => $command->trackingNumber,
-            'initiated_at' => now()->toIso8601String(),
-            'status' => 'initiated',
-        ];
+            // Emit appropriate event based on result
+            if ($shipmentResult['success']) {
+                $payload = [
+                    'order_uuid' => $command->orderUuid,
+                    'saga_uuid' => $command->sagaUuid,
+                    'shipping_address' => $command->shippingAddress,
+                    'shipping_method' => $command->shippingMethod,
+                    'tracking_number' => $shipmentResult['trackingNumber'],
+                    'shipment_id' => $shipmentResult['shipmentId'],
+                    'initiated_at' => now()->toIso8601String(),
+                    'status' => 'initiated',
+                ];
 
-        $event = new ShipmentInitiated(
-            $command->orderUuid,
-            $payload,
-            array_merge($command->metadata, ['saga_uuid' => $command->sagaUuid])
-        );
+                $event = new ShipmentInitiated(
+                    $command->orderUuid,
+                    $payload,
+                    array_merge($command->metadata, ['saga_uuid' => $command->sagaUuid])
+                );
+            } else {
+                $payload = [
+                    'order_uuid' => $command->orderUuid,
+                    'saga_uuid' => $command->sagaUuid,
+                    'shipping_address' => $command->shippingAddress,
+                    'shipping_method' => $command->shippingMethod,
+                    'reason' => $shipmentResult['error'],
+                    'failed_at' => now()->toIso8601String(),
+                ];
 
-        $this->eventStore->store($event);
-        $this->events->dispatch($event);
+                $event = new ShipmentInitiationFailed(
+                    $command->orderUuid,
+                    $payload,
+                    array_merge($command->metadata, ['saga_uuid' => $command->sagaUuid])
+                );
+            }
+
+            $this->eventStore->store($event);
+            $this->events->dispatch($event);
+
+        } catch (Throwable $e) {
+            // Emit failure event on exception
+            $payload = [
+                'order_uuid' => $command->orderUuid,
+                'saga_uuid' => $command->sagaUuid,
+                'shipping_address' => $command->shippingAddress,
+                'reason' => $e->getMessage(),
+                'failed_at' => now()->toIso8601String(),
+            ];
+
+            $event = new ShipmentInitiationFailed(
+                $command->orderUuid,
+                $payload,
+                array_merge($command->metadata, ['saga_uuid' => $command->sagaUuid, 'exception' => get_class($e)])
+            );
+
+            $this->eventStore->store($event);
+            $this->events->dispatch($event);
+
+            throw $e;
+        }
     }
 }
 
