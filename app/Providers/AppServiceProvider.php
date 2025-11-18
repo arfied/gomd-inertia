@@ -7,12 +7,18 @@ use App\Application\Order\Commands\AssignOrderToDoctor;
 use App\Application\Order\Commands\CancelOrder;
 use App\Application\Order\Commands\CreateOrder;
 use App\Application\Order\Commands\FulfillOrder;
+use App\Application\Order\Commands\ReserveInventory;
+use App\Application\Order\Commands\InitiateShipment;
+use App\Application\Order\Commands\StartOrderFulfillmentSaga;
 use App\Application\Order\EloquentOrderProjector;
 use App\Application\Order\EloquentPatientOrderFinder;
 use App\Application\Order\Handlers\AssignOrderToDoctorHandler;
 use App\Application\Order\Handlers\CancelOrderHandler;
 use App\Application\Order\Handlers\CreateOrderHandler;
 use App\Application\Order\Handlers\FulfillOrderHandler;
+use App\Application\Order\Handlers\ReserveInventoryHandler;
+use App\Application\Order\Handlers\InitiateShipmentHandler;
+use App\Application\Order\Handlers\StartOrderFulfillmentSagaHandler;
 use App\Application\Order\OrderProjector;
 use App\Application\Order\PatientOrderFinder;
 use App\Application\Order\Queries\GetPatientOrdersByPatientUuid;
@@ -182,6 +188,21 @@ class AppServiceProvider extends ServiceProvider
             $bus->register(
                 CancelOrder::class,
                 $app->make(CancelOrderHandler::class)
+            );
+
+            $bus->register(
+                ReserveInventory::class,
+                $app->make(ReserveInventoryHandler::class)
+            );
+
+            $bus->register(
+                InitiateShipment::class,
+                $app->make(InitiateShipmentHandler::class)
+            );
+
+            $bus->register(
+                StartOrderFulfillmentSaga::class,
+                $app->make(StartOrderFulfillmentSagaHandler::class)
             );
 
             $bus->register(
