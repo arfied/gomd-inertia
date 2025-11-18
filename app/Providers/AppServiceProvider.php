@@ -3,6 +3,22 @@
 namespace App\Providers;
 
 use App\Application\Commands\CommandBus;
+use App\Application\MedicationCatalog\Commands\AddMedicationToFormulary;
+use App\Application\MedicationCatalog\Commands\CreateCondition;
+use App\Application\MedicationCatalog\Commands\CreateFormulary;
+use App\Application\MedicationCatalog\Commands\CreateMedication;
+use App\Application\MedicationCatalog\Commands\RemoveMedicationFromFormulary;
+use App\Application\MedicationCatalog\Commands\UpdateCondition;
+use App\Application\MedicationCatalog\Commands\UpdateFormulary;
+use App\Application\MedicationCatalog\Commands\UpdateMedication;
+use App\Application\MedicationCatalog\Handlers\AddMedicationToFormularyHandler;
+use App\Application\MedicationCatalog\Handlers\CreateConditionHandler;
+use App\Application\MedicationCatalog\Handlers\CreateFormularyHandler;
+use App\Application\MedicationCatalog\Handlers\CreateMedicationHandler;
+use App\Application\MedicationCatalog\Handlers\RemoveMedicationFromFormularyHandler;
+use App\Application\MedicationCatalog\Handlers\UpdateConditionHandler;
+use App\Application\MedicationCatalog\Handlers\UpdateFormularyHandler;
+use App\Application\MedicationCatalog\Handlers\UpdateMedicationHandler;
 use App\Application\Order\Commands\AssignOrderToDoctor;
 use App\Application\Order\Commands\CancelOrder;
 use App\Application\Order\Commands\CreateOrder;
@@ -243,6 +259,46 @@ class AppServiceProvider extends ServiceProvider
             $bus->register(
                 RecordPatientVisitSummary::class,
                 $app->make(RecordPatientVisitSummaryHandler::class)
+            );
+
+            $bus->register(
+                CreateMedication::class,
+                $app->make(CreateMedicationHandler::class)
+            );
+
+            $bus->register(
+                UpdateMedication::class,
+                $app->make(UpdateMedicationHandler::class)
+            );
+
+            $bus->register(
+                CreateCondition::class,
+                $app->make(CreateConditionHandler::class)
+            );
+
+            $bus->register(
+                UpdateCondition::class,
+                $app->make(UpdateConditionHandler::class)
+            );
+
+            $bus->register(
+                CreateFormulary::class,
+                $app->make(CreateFormularyHandler::class)
+            );
+
+            $bus->register(
+                UpdateFormulary::class,
+                $app->make(UpdateFormularyHandler::class)
+            );
+
+            $bus->register(
+                AddMedicationToFormulary::class,
+                $app->make(AddMedicationToFormularyHandler::class)
+            );
+
+            $bus->register(
+                RemoveMedicationFromFormulary::class,
+                $app->make(RemoveMedicationFromFormularyHandler::class)
             );
         });
 
