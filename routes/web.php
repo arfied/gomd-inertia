@@ -4,6 +4,7 @@ use App\Http\Controllers\PatientEnrollmentController;
 use App\Http\Controllers\PatientActivityController;
 use App\Http\Controllers\PatientSubscriptionController;
 use App\Http\Controllers\PatientTimelineController;
+use App\Http\Controllers\PatientOrderTimelineController;
 use App\Http\Controllers\PatientDemographicsController;
 use App\Http\Controllers\PatientDocumentsController;
 use App\Http\Controllers\PatientListController;
@@ -12,6 +13,7 @@ use App\Http\Controllers\PatientOrdersController;
 use App\Http\Controllers\PatientSelfMedicalHistoryController;
 use App\Http\Controllers\StaffPatientDocumentsController;
 use App\Http\Controllers\StaffPatientOrdersController;
+use App\Http\Controllers\StaffPatientOrderTimelineController;
 use App\Http\Controllers\DoctorPatientPrescriptionsController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -72,6 +74,9 @@ Route::middleware('auth')->group(function () {
     Route::get('patient/events/timeline', [PatientTimelineController::class, 'index'])
         ->name('patient.events.timeline');
 
+    Route::get('patient/orders/timeline', [PatientOrderTimelineController::class, 'index'])
+        ->name('patient.orders.timeline');
+
     Route::get('patient/medical-history', [PatientSelfMedicalHistoryController::class, 'show'])
         ->name('patient.medical-history.show');
 
@@ -104,6 +109,9 @@ Route::middleware('auth')->group(function () {
 
     Route::get('patients/{patientUuid}/orders', [StaffPatientOrdersController::class, 'index'])
         ->name('patients.orders.index');
+
+    Route::get('patients/{patientUuid}/orders/timeline', [StaffPatientOrderTimelineController::class, 'index'])
+        ->name('patients.orders.timeline');
 
     Route::post('patients/{patientUuid}/documents', [StaffPatientDocumentsController::class, 'store'])
         ->name('patients.documents.store');

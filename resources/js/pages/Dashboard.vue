@@ -144,6 +144,55 @@ const groupedTimelineEvents = computed<TimelineEventGroup[]>(() => {
     return Array.from(groups.values());
 });
 
+const filteredOrderTimelineEvents = computed(() => {
+    if (selectedOrderTimelineFilter.value === 'all') {
+        return orderTimelineEvents.value;
+    }
+
+    return orderTimelineEvents.value.filter(
+        (event) => event.event_type === `order.${selectedOrderTimelineFilter.value}`,
+    );
+});
+
+const groupedOrderTimelineEvents = computed<TimelineEventGroup[]>(() => {
+    const groups = new Map<string, TimelineEventGroup>();
+
+    for (const event of filteredOrderTimelineEvents.value) {
+        const isoString = event.occurred_at;
+        let dateKey = 'unknown';
+        let label = 'Unknown date';
+
+        if (isoString) {
+            const date = new Date(isoString);
+
+            if (!Number.isNaN(date.getTime())) {
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+
+                dateKey = `${year}-${month}-${day}`;
+                label = date.toLocaleDateString();
+            }
+        }
+
+        let group = groups.get(dateKey);
+
+        if (!group) {
+            group = {
+                date: dateKey,
+                label,
+                events: [],
+            };
+
+            groups.set(dateKey, group);
+        }
+
+        group.events.push(event);
+    }
+
+    return Array.from(groups.values());
+});
+
 
 
 const enrollment = ref<PatientEnrollment | null>(null);
@@ -191,6 +240,21 @@ const uploadForm = ref<{
 const recentActivity = ref<RecentActivityEntry[]>([]);
 const loadingRecentActivity = ref(true);
 const recentActivityError = ref<string | null>(null);
+
+interface OrderTimelineEventEntry {
+    id: number;
+    aggregate_uuid: string;
+    event_type: string;
+    description: string;
+    payload: Record<string, unknown> | null;
+    metadata: Record<string, unknown> | null;
+    occurred_at: string | null;
+}
+
+const orderTimelineEvents = ref<OrderTimelineEventEntry[]>([]);
+const loadingOrderTimeline = ref(true);
+const orderTimelineError = ref<string | null>(null);
+const selectedOrderTimelineFilter = ref<'all' | 'created' | 'prescribed' | 'fulfilled' | 'cancelled'>('all');
 
 const formattedEnrolledAt = computed(() => {
     if (!enrollment.value?.enrolled_at) {
@@ -866,6 +930,33 @@ async function loadRecentActivity() {
     }
 }
 
+async function loadOrderTimeline() {
+    try {
+        const response = await fetch('/patient/orders/timeline', {
+            headers: {
+                Accept: 'application/json',
+            },
+            credentials: 'same-origin',
+        });
+
+        if (!response.ok) {
+            orderTimelineError.value = `Failed to load order timeline (${response.status})`;
+            return;
+        }
+
+        const data = (await response.json()) as {
+            events: OrderTimelineEventEntry[] | null;
+        };
+
+        orderTimelineEvents.value = data.events ?? [];
+    } catch {
+        orderTimelineError.value =
+            'A network error occurred while loading your order timeline.';
+    } finally {
+        loadingOrderTimeline.value = false;
+    }
+}
+
 async function loadTimeline() {
     try {
         const params = new URLSearchParams();
@@ -919,6 +1010,7 @@ onMounted(() => {
     void loadDocuments();
     void loadMedicalHistory();
     void loadRecentActivity();
+    void loadOrderTimeline();
     void reloadTimelineForCurrentFilter();
 });
 </script>
@@ -1935,6 +2027,154 @@ onMounted(() => {
                                                     class="mt-0.5 text-xs text-muted-foreground"
                                                 >
                                                     Source: {{ formatTimelineSource(event.source) }}
+                                                </span>
+                                            </div>
+                                        </li>
+                                    </ol>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div
+                class="relative min-h-screen flex-1 rounded-xl border border-sidebar-border/70 md:min-h-min dark:border-sidebar-border"
+            >
+                <PlaceholderPattern />
+                <div class="relative z-10 flex h-full flex-col bg-background/80">
+                    <div class="border-b border-sidebar-border/60 px-4 py-3">
+                        <h2 class="text-sm font-semibold text-foreground">
+                            Order history timeline
+                        </h2>
+                        <p class="text-xs text-muted-foreground">
+                            A chronological view of your medication orders and their status.
+                        </p>
+                    </div>
+                    <div class="flex-1 overflow-y-auto px-4 py-3">
+                        <div
+                            v-if="loadingOrderTimeline"
+                            class="flex items-center space-x-2 text-sm text-muted-foreground"
+                        >
+                            <Spinner class="h-4 w-4" />
+                            <span>Loading order timeline…</span>
+                        </div>
+                        <p
+                            v-else-if="orderTimelineError"
+                            class="text-sm text-destructive"
+                        >
+                            {{ orderTimelineError }}
+                        </p>
+                        <div
+                            v-else
+                            class="flex flex-col gap-3 text-sm"
+                        >
+                            <div
+                                class="flex items-center justify-between text-xs text-muted-foreground"
+                            >
+                                <span>
+                                    Showing {{ filteredOrderTimelineEvents.length }}
+                                    {{ filteredOrderTimelineEvents.length === 1 ? 'event' : 'events' }}
+                                </span>
+                                <div
+                                    class="inline-flex items-center gap-1 rounded-md border border-border bg-background/80 p-0.5"
+                                >
+                                    <button
+                                        type="button"
+                                        class="rounded px-2 py-1"
+                                        :class="selectedOrderTimelineFilter === 'all'
+                                            ? 'bg-primary text-primary-foreground'
+                                            : 'text-foreground'"
+                                        @click="selectedOrderTimelineFilter = 'all'"
+                                    >
+                                        All
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="rounded px-2 py-1"
+                                        :class="selectedOrderTimelineFilter === 'created'
+                                            ? 'bg-primary text-primary-foreground'
+                                            : 'text-foreground'"
+                                        @click="selectedOrderTimelineFilter = 'created'"
+                                    >
+                                        Created
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="rounded px-2 py-1"
+                                        :class="selectedOrderTimelineFilter === 'prescribed'
+                                            ? 'bg-primary text-primary-foreground'
+                                            : 'text-foreground'"
+                                        @click="selectedOrderTimelineFilter = 'prescribed'"
+                                    >
+                                        Prescribed
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="rounded px-2 py-1"
+                                        :class="selectedOrderTimelineFilter === 'fulfilled'
+                                            ? 'bg-primary text-primary-foreground'
+                                            : 'text-foreground'"
+                                        @click="selectedOrderTimelineFilter = 'fulfilled'"
+                                    >
+                                        Fulfilled
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="rounded px-2 py-1"
+                                        :class="selectedOrderTimelineFilter === 'cancelled'
+                                            ? 'bg-primary text-primary-foreground'
+                                            : 'text-foreground'"
+                                        @click="selectedOrderTimelineFilter = 'cancelled'"
+                                    >
+                                        Cancelled
+                                    </button>
+                                </div>
+                            </div>
+
+                            <p
+                                v-if="!filteredOrderTimelineEvents.length && selectedOrderTimelineFilter === 'all'"
+                                class="text-sm text-muted-foreground"
+                            >
+                                No orders yet. When you place medication orders, they will
+                                appear here in chronological order.
+                            </p>
+                            <p
+                                v-else-if="!filteredOrderTimelineEvents.length"
+                                class="text-sm text-muted-foreground"
+                            >
+                                No events match this filter yet.
+                            </p>
+
+                            <div
+                                v-else
+                                class="space-y-4"
+                            >
+                                <div
+                                    v-for="group in groupedOrderTimelineEvents"
+                                    :key="group.date"
+                                    class="space-y-1"
+                                >
+                                    <div class="text-xs font-semibold text-muted-foreground">
+                                        {{ group.label }}
+                                    </div>
+                                    <ol class="relative space-y-4 border-l border-border pl-4 text-sm">
+                                        <li
+                                            v-for="event in group.events"
+                                            :key="event.id"
+                                            class="relative pl-2"
+                                        >
+                                            <span
+                                                class="absolute -left-[9px] mt-1 h-2 w-2 rounded-full bg-primary"
+                                            />
+                                            <div class="flex flex-col">
+                                                <span class="font-medium text-foreground">
+                                                    {{ event.description }}
+                                                </span>
+                                                <span class="text-xs text-muted-foreground">
+                                                    {{ formatActivityTimestamp(event.occurred_at) }}
+                                                </span>
+                                                <span class="mt-0.5 text-xs text-muted-foreground">
+                                                    {{ event.event_type }}
                                                 </span>
                                             </div>
                                         </li>

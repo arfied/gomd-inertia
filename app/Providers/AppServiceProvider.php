@@ -28,6 +28,8 @@ use App\Application\Order\Commands\InitiateShipment;
 use App\Application\Order\Commands\StartOrderFulfillmentSaga;
 use App\Application\Order\EloquentOrderProjector;
 use App\Application\Order\EloquentPatientOrderFinder;
+use App\Application\Order\EloquentPatientOrderTimelineFinder;
+use App\Application\Order\EloquentStaffPatientOrderTimelineFinder;
 use App\Application\Order\Handlers\AssignOrderToDoctorHandler;
 use App\Application\Order\Handlers\CancelOrderHandler;
 use App\Application\Order\Handlers\CreateOrderHandler;
@@ -37,10 +39,16 @@ use App\Application\Order\Handlers\InitiateShipmentHandler;
 use App\Application\Order\Handlers\StartOrderFulfillmentSagaHandler;
 use App\Application\Order\OrderProjector;
 use App\Application\Order\PatientOrderFinder;
+use App\Application\Order\PatientOrderTimelineFinder;
 use App\Application\Order\Queries\GetPatientOrdersByPatientUuid;
 use App\Application\Order\Queries\GetPatientOrdersByPatientUuidHandler;
 use App\Application\Order\Queries\GetPatientOrdersByUserId;
 use App\Application\Order\Queries\GetPatientOrdersByUserIdHandler;
+use App\Application\Order\Queries\GetPatientOrderTimelineByUserId;
+use App\Application\Order\Queries\GetPatientOrderTimelineByUserIdHandler;
+use App\Application\Order\Queries\GetPatientOrderTimelineByPatientUuid;
+use App\Application\Order\Queries\GetPatientOrderTimelineByPatientUuidHandler;
+use App\Application\Order\StaffPatientOrderTimelineFinder;
 use App\Application\Patient\Commands\EnrollPatient;
 use App\Application\Prescription\Commands\CreatePrescription;
 use App\Application\Prescription\Handlers\CreatePrescriptionHandler;
@@ -163,6 +171,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(PatientMedicalHistoryProjector::class, EloquentPatientMedicalHistoryProjector::class);
         $this->app->bind(OrderProjector::class, EloquentOrderProjector::class);
         $this->app->bind(PatientOrderFinder::class, EloquentPatientOrderFinder::class);
+        $this->app->bind(PatientOrderTimelineFinder::class, EloquentPatientOrderTimelineFinder::class);
+        $this->app->bind(StaffPatientOrderTimelineFinder::class, EloquentStaffPatientOrderTimelineFinder::class);
         $this->app->bind(PrescriptionProjector::class, EloquentPrescriptionProjector::class);
 
     }
@@ -370,6 +380,16 @@ class AppServiceProvider extends ServiceProvider
             $bus->register(
                 GetPatientOrdersByPatientUuid::class,
                 $app->make(GetPatientOrdersByPatientUuidHandler::class)
+            );
+
+            $bus->register(
+                GetPatientOrderTimelineByUserId::class,
+                $app->make(GetPatientOrderTimelineByUserIdHandler::class)
+            );
+
+            $bus->register(
+                GetPatientOrderTimelineByPatientUuid::class,
+                $app->make(GetPatientOrderTimelineByPatientUuidHandler::class)
             );
 
         });
