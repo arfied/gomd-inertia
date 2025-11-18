@@ -1823,11 +1823,13 @@ const customPreset = {
 > **Medication data note:** The legacy system exposed medications through two table groups (`medications` and `medication_bases` plus related tables). For all new Order Management & Medication Catalog work, treat the `medications` table as the single source of truth and do not depend on `medication_bases` or its related tables.
 
 
-- [ ] Order aggregate (`CreateOrder`, `FulfillOrder`, `CancelOrder`) and events.
+- [x] Order aggregate (`CreateOrder`, `FulfillOrder`, `CancelOrder`) and events, with projections into the legacy `medication_orders` table and read-side query endpoints for patient and staff order lists.
 - [ ] Order fulfillment saga wired through event store and queues.
 - [ ] Medication catalog aggregates (`Medication`, `Condition`, `Formulary`) and events.
 - [ ] Medication search and formulary read models.
 - [ ] Patient order history timeline on patient and staff dashboards.
+- [x] Doctor-facing endpoint to create prescriptions for patient orders (event-sourced via `CreatePrescription` / `PrescriptionCreated`, projecting into the legacy `prescriptions` table).
+- [x] Linking prescriptions back to orders on `PrescriptionCreated` projection (sets `medication_orders.prescription_id`, updates status to `prescribed`, and notifies the patient).
 
 ### 4. Commission & Referral Network
 
