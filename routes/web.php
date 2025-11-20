@@ -16,6 +16,8 @@ use App\Http\Controllers\StaffPatientOrdersController;
 use App\Http\Controllers\StaffPatientOrderTimelineController;
 use App\Http\Controllers\DoctorPatientPrescriptionsController;
 use App\Http\Controllers\AgentCommissionDashboardController;
+use App\Http\Controllers\ReferralTrackingController;
+use App\Http\Controllers\ReferralNetworkController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
@@ -131,6 +133,23 @@ Route::middleware('auth')->group(function () {
 
     Route::get('agent/commission/dashboard', [AgentCommissionDashboardController::class, 'show'])
         ->name('agent.commission.dashboard');
+
+    // Referral tracking routes
+    Route::post('referral/track', [ReferralTrackingController::class, 'trackClick'])
+        ->name('referral.track');
+
+    Route::post('referral/convert', [ReferralTrackingController::class, 'recordConversion'])
+        ->name('referral.convert');
+
+    Route::get('referral/{referralCode}', [ReferralTrackingController::class, 'show'])
+        ->name('referral.show');
+
+    // Referral network visualization routes
+    Route::get('agent/{agentId}/referral-network/hierarchy', [ReferralNetworkController::class, 'hierarchy'])
+        ->name('agent.referral-network.hierarchy');
+
+    Route::get('agent/{agentId}/referral-network/performance', [ReferralNetworkController::class, 'performance'])
+        ->name('agent.referral-network.performance');
 });
 
 require __DIR__.'/settings.php';

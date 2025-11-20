@@ -100,6 +100,14 @@ class Agent extends Model
     }
 
     /**
+     * Get the referral links created by this agent.
+     */
+    public function referralLinks(): HasMany
+    {
+        return $this->hasMany(ReferralLink::class);
+    }
+
+    /**
      * Get the patients directly referred by this agent.
      */
     public function referredPatients()
