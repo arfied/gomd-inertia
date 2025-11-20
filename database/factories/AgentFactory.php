@@ -23,7 +23,7 @@ class AgentFactory extends Factory
     {
         return [
             'user_id' => User::factory(),
-            'company' => $this->faker->company(),
+            'company' => $this->faker->name(),
             'experience' => $this->faker->randomElement(['new', '1-3', '3-5', '5+']),
             'status' => 'approved',
             'tier' => $this->faker->randomElement(['AGENT', 'MGA', 'SVG', 'FMO', 'SFMO']),

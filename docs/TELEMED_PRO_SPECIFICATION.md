@@ -1833,8 +1833,8 @@ const customPreset = {
 
 ### 4. Commission & Referral Network
 
-- [ ] Commission aggregates, events, and calculation engine.
-- [ ] Hierarchical commission cascade through referral hierarchy.
+- [x] Commission aggregates, events, and calculation engine.
+- [x] Hierarchical commission cascade through referral hierarchy.
 - [ ] Commission dashboard read models and UI.
 - [ ] Agent/LOA onboarding flow and events.
 - [ ] Referral link generation, tracking, and network visualization.

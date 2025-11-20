@@ -7,6 +7,12 @@ use App\Application\Commission\CommissionDashboardProjector;
 use App\Application\Commission\EloquentCommissionDashboardProjector;
 use App\Application\Commission\EloquentPayoutHistoryProjector;
 use App\Application\Commission\PayoutHistoryProjector;
+use App\Application\Commission\Queries\GetAgentEarningsOverview;
+use App\Application\Commission\Queries\GetAgentEarningsOverviewHandler;
+use App\Application\Commission\Queries\GetRecentCommissions;
+use App\Application\Commission\Queries\GetRecentCommissionsHandler;
+use App\Application\Commission\Queries\GetAgentReferralHierarchy;
+use App\Application\Commission\Queries\GetAgentReferralHierarchyHandler;
 use App\Application\MedicationCatalog\Commands\AddMedicationToFormulary;
 use App\Application\MedicationCatalog\Commands\CreateCondition;
 use App\Application\MedicationCatalog\Commands\CreateFormulary;
@@ -397,6 +403,21 @@ class AppServiceProvider extends ServiceProvider
             $bus->register(
                 GetPatientOrderTimelineByPatientUuid::class,
                 $app->make(GetPatientOrderTimelineByPatientUuidHandler::class)
+            );
+
+            $bus->register(
+                GetAgentEarningsOverview::class,
+                $app->make(GetAgentEarningsOverviewHandler::class)
+            );
+
+            $bus->register(
+                GetRecentCommissions::class,
+                $app->make(GetRecentCommissionsHandler::class)
+            );
+
+            $bus->register(
+                GetAgentReferralHierarchy::class,
+                $app->make(GetAgentReferralHierarchyHandler::class)
             );
 
         });

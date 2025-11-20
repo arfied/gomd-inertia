@@ -15,6 +15,7 @@ use App\Http\Controllers\StaffPatientDocumentsController;
 use App\Http\Controllers\StaffPatientOrdersController;
 use App\Http\Controllers\StaffPatientOrderTimelineController;
 use App\Http\Controllers\DoctorPatientPrescriptionsController;
+use App\Http\Controllers\AgentCommissionDashboardController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
@@ -127,6 +128,9 @@ Route::middleware('auth')->group(function () {
 
     Route::post('patients/{patientUuid}/medical-history/visit-summary', [PatientMedicalHistoryController::class, 'storeVisitSummary'])
         ->name('patients.medical-history.visit-summary.store');
+
+    Route::get('agent/commission/dashboard', [AgentCommissionDashboardController::class, 'show'])
+        ->name('agent.commission.dashboard');
 });
 
 require __DIR__.'/settings.php';
