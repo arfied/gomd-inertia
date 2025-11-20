@@ -19,6 +19,7 @@ use App\Http\Controllers\AgentCommissionDashboardController;
 use App\Http\Controllers\AgentReferralLinksController;
 use App\Http\Controllers\ReferralTrackingController;
 use App\Http\Controllers\ReferralNetworkController;
+use App\Http\Controllers\SubscriptionAnalyticsDashboardController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
@@ -158,6 +159,26 @@ Route::middleware('auth')->group(function () {
 
     Route::get('agent/{agentId}/referral-network/performance', [ReferralNetworkController::class, 'performance'])
         ->name('agent.referral-network.performance');
+
+    // Agent Analytics Dashboard Page
+    Route::get('agent/analytics', function () {
+        return Inertia::render('agent/AnalyticsDashboard');
+    })->name('agent.analytics');
+
+    // Subscription Analytics API Routes
+    Route::prefix('analytics/subscription')->group(function () {
+        Route::get('mrr', [SubscriptionAnalyticsDashboardController::class, 'mrr'])
+            ->name('analytics.subscription.mrr');
+
+        Route::get('churn', [SubscriptionAnalyticsDashboardController::class, 'churn'])
+            ->name('analytics.subscription.churn');
+
+        Route::get('ltv', [SubscriptionAnalyticsDashboardController::class, 'ltv'])
+            ->name('analytics.subscription.ltv');
+
+        Route::get('dashboard', [SubscriptionAnalyticsDashboardController::class, 'dashboard'])
+            ->name('analytics.subscription.dashboard');
+    });
 });
 
 require __DIR__.'/settings.php';

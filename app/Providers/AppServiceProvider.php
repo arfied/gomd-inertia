@@ -128,6 +128,22 @@ use App\Application\Patient\Queries\GetPatientSubscriptionByUserIdHandler;
 use App\Application\Patient\Queries\GetRecentPatientActivityByUserId;
 use App\Application\Patient\Queries\GetRecentPatientActivityByUserIdHandler;
 use App\Application\Queries\QueryBus;
+use App\Application\Analytics\Queries\GetMonthlyRecurringRevenue;
+use App\Application\Analytics\Queries\GetMonthlyRecurringRevenueHandler;
+use App\Application\Analytics\Queries\GetChurnMetrics;
+use App\Application\Analytics\Queries\GetChurnMetricsHandler;
+use App\Application\Analytics\Queries\GetLifetimeValue;
+use App\Application\Analytics\Queries\GetLifetimeValueHandler;
+use App\Application\Analytics\EventHandlers\SubscriptionCreatedHandler;
+use App\Application\Analytics\EventHandlers\SubscriptionRenewedHandler;
+use App\Application\Analytics\EventHandlers\SubscriptionCancelledHandler;
+use App\Application\Analytics\EventHandlers\PaymentAttemptedHandler;
+use App\Application\Analytics\EventHandlers\PaymentFailedHandler;
+use App\Domain\Subscription\Events\SubscriptionCreated;
+use App\Domain\Subscription\Events\SubscriptionRenewed;
+use App\Domain\Subscription\Events\SubscriptionCancelled;
+use App\Domain\Subscription\Events\PaymentAttempted;
+use App\Domain\Subscription\Events\PaymentFailed;
 use App\Services\AuthorizeNet\AuthorizeNetApi;
 use App\Services\AuthorizeNet\AuthorizeNetService;
 use App\Services\AuthorizeNet\AchPaymentService;
@@ -236,6 +252,14 @@ class AppServiceProvider extends ServiceProvider
         Queue::failing(function (\Illuminate\Queue\Events\JobFailed $event) use ($queueMonitor): void {
             $queueMonitor->recordFailed($event);
         });
+
+        // Register analytics event listeners
+        $dispatcher = $this->app->make(Dispatcher::class);
+        $dispatcher->listen(SubscriptionCreated::class, SubscriptionCreatedHandler::class);
+        $dispatcher->listen(SubscriptionRenewed::class, SubscriptionRenewedHandler::class);
+        $dispatcher->listen(SubscriptionCancelled::class, SubscriptionCancelledHandler::class);
+        $dispatcher->listen(PaymentAttempted::class, PaymentAttemptedHandler::class);
+        $dispatcher->listen(PaymentFailed::class, PaymentFailedHandler::class);
 
         $this->app->resolving(CommandBus::class, function (CommandBus $bus, $app) {
             $bus->register(
@@ -448,6 +472,21 @@ class AppServiceProvider extends ServiceProvider
             $bus->register(
                 GetAgentReferralHierarchy::class,
                 $app->make(GetAgentReferralHierarchyHandler::class)
+            );
+
+            $bus->register(
+                GetMonthlyRecurringRevenue::class,
+                $app->make(GetMonthlyRecurringRevenueHandler::class)
+            );
+
+            $bus->register(
+                GetChurnMetrics::class,
+                $app->make(GetChurnMetricsHandler::class)
+            );
+
+            $bus->register(
+                GetLifetimeValue::class,
+                $app->make(GetLifetimeValueHandler::class)
             );
 
         });
