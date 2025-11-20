@@ -16,6 +16,7 @@ use App\Http\Controllers\StaffPatientOrdersController;
 use App\Http\Controllers\StaffPatientOrderTimelineController;
 use App\Http\Controllers\DoctorPatientPrescriptionsController;
 use App\Http\Controllers\AgentCommissionDashboardController;
+use App\Http\Controllers\AgentReferralLinksController;
 use App\Http\Controllers\ReferralTrackingController;
 use App\Http\Controllers\ReferralNetworkController;
 use Illuminate\Support\Facades\Route;
@@ -27,6 +28,10 @@ Route::get('/', function () {
         'canRegister' => Features::enabled(Features::registration()),
     ]);
 })->name('home');
+
+// Public referral landing page - tracks clicks and redirects
+Route::get('/ref/{referralCode}', [ReferralTrackingController::class, 'landingPage'])
+    ->name('referral.landing');
 
 Route::get('dashboard', function () {
     return Inertia::render('Dashboard');
@@ -133,6 +138,9 @@ Route::middleware('auth')->group(function () {
 
     Route::get('agent/commission/dashboard', [AgentCommissionDashboardController::class, 'show'])
         ->name('agent.commission.dashboard');
+
+    Route::get('agent/referral-links', [AgentReferralLinksController::class, 'index'])
+        ->name('agent.referral-links.index');
 
     // Referral tracking routes
     Route::post('referral/track', [ReferralTrackingController::class, 'trackClick'])

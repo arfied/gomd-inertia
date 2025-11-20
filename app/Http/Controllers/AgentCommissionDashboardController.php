@@ -6,12 +6,13 @@ use App\Application\Commission\Queries\GetAgentEarningsOverview;
 use App\Application\Commission\Queries\GetRecentCommissions;
 use App\Application\Commission\Queries\GetAgentReferralHierarchy;
 use App\Application\Queries\QueryBus;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class AgentCommissionDashboardController extends Controller
 {
-    public function show(Request $request, QueryBus $queryBus): JsonResponse
+    public function show(Request $request, QueryBus $queryBus): Response
     {
         $user = $request->user();
 
@@ -39,7 +40,7 @@ class AgentCommissionDashboardController extends Controller
             new GetAgentReferralHierarchy($agentId, 3)
         );
 
-        return response()->json([
+        return Inertia::render('agent/CommissionDashboard', [
             'earnings_overview' => $earningsOverview,
             'recent_commissions' => $recentCommissions,
             'referral_hierarchy' => $referralHierarchy,

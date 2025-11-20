@@ -14,7 +14,7 @@ import {
 import { dashboard } from '@/routes';
 import type { AppPageProps, NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
-import { BookOpen, Folder, LayoutGrid, Users } from 'lucide-vue-next';
+import { BookOpen, Folder, LayoutGrid, Users, DollarSign, Link as LinkIcon } from 'lucide-vue-next';
 import AppLogo from './AppLogo.vue';
 import { computed } from 'vue';
 
@@ -35,11 +35,26 @@ const mainNavItems = computed<NavItem[]>(() => {
     const isStaffOrAdmin =
         auth.isStaffOrAdmin ?? (user && (user.role === 'admin' || user.role === 'staff'));
 
+    const isAgent = user && (user.role === 'agent' || (user.roles && user.roles.some((r: any) => r.name === 'agent')));
+
     if (isStaffOrAdmin) {
         items.push({
             title: 'Patients',
             href: '/dashboard/patients',
             icon: Users,
+        });
+    }
+
+    if (isAgent) {
+        items.push({
+            title: 'Commission Dashboard',
+            href: '/agent/commission/dashboard',
+            icon: DollarSign,
+        });
+        items.push({
+            title: 'Referral Links',
+            href: '/agent/referral-links',
+            icon: LinkIcon,
         });
     }
 

@@ -1,5 +1,7 @@
 <?php
 
+use App\Enums\ReferralType;
+use App\Enums\ReferralLinkStatus;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -14,13 +16,13 @@ return new class extends Migration
         Schema::create('referral_links', function (Blueprint $table) {
             $table->id();
             $table->foreignId('agent_id')->constrained('agents')->onDelete('cascade');
-            $table->enum('referral_type', ['patient', 'agent', 'business'])->default('patient');
+            $table->string('referral_type')->default(ReferralType::Patient->value);
             $table->string('referral_code')->unique();
             $table->uuid('referral_token')->unique();
             $table->integer('clicks_count')->default(0);
             $table->integer('conversions_count')->default(0);
             $table->float('conversion_rate')->default(0);
-            $table->enum('status', ['active', 'inactive', 'archived'])->default('active');
+            $table->string('status')->default(ReferralLinkStatus::Active->value);
             $table->timestamps();
 
             $table->index('agent_id');

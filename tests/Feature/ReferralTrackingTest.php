@@ -67,5 +67,49 @@ describe('Referral Tracking', function () {
         $response->assertStatus(200);
         $response->assertJsonPath('referral_code', $referralLink->referral_code);
     });
+
+    it('tracks click from public referral landing page', function () {
+        $agent = Agent::factory()->create();
+        $referralLink = ReferralLink::factory()->create([
+            'agent_id' => $agent->id,
+            'clicks_count' => 0,
+        ]);
+
+        $response = $this->get(route('referral.landing', $referralLink->referral_code));
+
+        $response->assertStatus(302);
+        expect(ReferralClick::count())->toBe(1);
+        expect($referralLink->fresh()->clicks_count)->toBe(1);
+    });
+
+    it('redirects to home for patient referral type', function () {
+        $agent = Agent::factory()->create();
+        $referralLink = ReferralLink::factory()->create([
+            'agent_id' => $agent->id,
+            'referral_type' => 'patient',
+        ]);
+
+        $response = $this->get(route('referral.landing', $referralLink->referral_code));
+
+        $response->assertRedirect('/');
+    });
+
+    it('redirects to register for agent referral type', function () {
+        $agent = Agent::factory()->create();
+        $referralLink = ReferralLink::factory()->create([
+            'agent_id' => $agent->id,
+            'referral_type' => 'agent',
+        ]);
+
+        $response = $this->get(route('referral.landing', $referralLink->referral_code));
+
+        $response->assertRedirect('/register');
+    });
+
+    it('returns error for invalid referral code', function () {
+        $response = $this->get(route('referral.landing', 'INVALID'));
+
+        $response->assertRedirect('/');
+    });
 });
 

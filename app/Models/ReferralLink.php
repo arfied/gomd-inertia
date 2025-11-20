@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Enums\ReferralType;
+use App\Enums\ReferralLinkStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -29,6 +31,8 @@ class ReferralLink extends Model
     ];
 
     protected $casts = [
+        'referral_type' => ReferralType::class,
+        'status' => ReferralLinkStatus::class,
         'clicks_count' => 'integer',
         'conversions_count' => 'integer',
         'conversion_rate' => 'float',

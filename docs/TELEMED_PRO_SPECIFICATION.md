@@ -1835,9 +1835,9 @@ const customPreset = {
 
 - [x] Commission aggregates, events, and calculation engine.
 - [x] Hierarchical commission cascade through referral hierarchy.
-- [ ] Commission dashboard read models and UI.
-- [ ] Agent/LOA onboarding flow and events.
-- [ ] Referral link generation, tracking, and network visualization.
+- [x] Commission dashboard read models and UI.
+- [x] Agent/LOA onboarding flow and events.
+- [x] Referral link generation, tracking, and network visualization.
 
 ### 5. Payment & Subscriptions
 

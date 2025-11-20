@@ -10,13 +10,13 @@ uses(RefreshDatabase::class);
 describe('Agent Commission Dashboard Controller', function () {
     it('returns 403 if user is not an agent', function () {
         $user = User::factory()->create();
-        
-        $response = $this->actingAs($user)->getJson('/agent/commission/dashboard');
-        
+
+        $response = $this->actingAs($user)->get('/agent/commission/dashboard');
+
         expect($response->status())->toBe(403);
     });
 
-    it('returns commission dashboard data for agent', function () {
+    it('returns commission dashboard page for agent', function () {
         $user = User::factory()->create();
         $agent = Agent::factory()->create(['user_id' => $user->id]);
 
@@ -26,14 +26,15 @@ describe('Agent Commission Dashboard Controller', function () {
             'status' => 'pending',
         ]);
 
-        $response = $this->actingAs($user)->getJson('/agent/commission/dashboard');
+        $response = $this->actingAs($user)->get('/agent/commission/dashboard');
 
         expect($response->status())->toBe(200);
-        expect($response->json())->toHaveKeys([
-            'earnings_overview',
-            'recent_commissions',
-            'referral_hierarchy',
-        ]);
+        $response->assertInertia(fn ($page) => $page
+            ->component('agent/CommissionDashboard')
+            ->has('earnings_overview')
+            ->has('recent_commissions')
+            ->has('referral_hierarchy')
+        );
     });
 
     it('returns earnings overview with period parameter', function () {
@@ -45,10 +46,12 @@ describe('Agent Commission Dashboard Controller', function () {
             'status' => 'pending',
         ]);
 
-        $response = $this->actingAs($user)->getJson('/agent/commission/dashboard?period=month');
+        $response = $this->actingAs($user)->get('/agent/commission/dashboard?period=month');
 
         expect($response->status())->toBe(200);
-        expect($response->json('earnings_overview.period'))->toBe('month');
+        $response->assertInertia(fn ($page) => $page
+            ->where('earnings_overview.period', 'month')
+        );
     });
 
     it('returns paginated recent commissions', function () {
@@ -60,21 +63,25 @@ describe('Agent Commission Dashboard Controller', function () {
             'status' => 'pending',
         ]);
 
-        $response = $this->actingAs($user)->getJson('/agent/commission/dashboard?limit=10&page=1');
+        $response = $this->actingAs($user)->get('/agent/commission/dashboard?limit=10&page=1');
 
         expect($response->status())->toBe(200);
-        expect($response->json('recent_commissions.total'))->toBe(15);
-        expect($response->json('recent_commissions.per_page'))->toBe(10);
+        $response->assertInertia(fn ($page) => $page
+            ->where('recent_commissions.total', 15)
+            ->where('recent_commissions.per_page', 10)
+        );
     });
 
     it('returns referral hierarchy', function () {
         $user = User::factory()->create();
         $agent = Agent::factory()->create(['user_id' => $user->id]);
 
-        $response = $this->actingAs($user)->getJson('/agent/commission/dashboard');
+        $response = $this->actingAs($user)->get('/agent/commission/dashboard');
 
         expect($response->status())->toBe(200);
-        expect($response->json())->toHaveKey('referral_hierarchy');
+        $response->assertInertia(fn ($page) => $page
+            ->has('referral_hierarchy')
+        );
     });
 });
 

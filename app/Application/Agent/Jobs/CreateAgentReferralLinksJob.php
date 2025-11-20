@@ -2,8 +2,8 @@
 
 namespace App\Application\Agent\Jobs;
 
+use App\Application\Agent\Handlers\CreateAgentReferralLinksHandler;
 use App\Domain\Agent\Events\AgentReferralLinksCreated;
-use App\Models\Agent;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -31,10 +31,7 @@ class CreateAgentReferralLinksJob implements ShouldQueue
     {
         $agentId = $this->payload['agent_id'] ?? null;
         if ($agentId) {
-            $agent = Agent::find($agentId);
-            if ($agent) {
-                $agent->generateReferralCode();
-            }
+            (new CreateAgentReferralLinksHandler())->handle($agentId);
         }
 
         event(new AgentReferralLinksCreated(
