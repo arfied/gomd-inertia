@@ -35,4 +35,11 @@ return [
         ],
     ],
 
+    'authorize_net' => [
+        'login_id' => env('AUTHORIZE_NET_LOGIN_ID'),
+        'transaction_key' => env('AUTHORIZE_NET_TRANSACTION_KEY'),
+        'sandbox' => env('AUTHORIZE_NET_SANDBOX', true),
+        'ach_verification_required' => env('ACH_VERIFICATION_REQUIRED', true),
+    ],
+
 ];

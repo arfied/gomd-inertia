@@ -128,6 +128,13 @@ use App\Application\Patient\Queries\GetPatientSubscriptionByUserIdHandler;
 use App\Application\Patient\Queries\GetRecentPatientActivityByUserId;
 use App\Application\Patient\Queries\GetRecentPatientActivityByUserIdHandler;
 use App\Application\Queries\QueryBus;
+use App\Services\AuthorizeNet\AuthorizeNetApi;
+use App\Services\AuthorizeNet\AuthorizeNetService;
+use App\Services\AuthorizeNet\AchPaymentService;
+use App\Services\AuthorizeNet\AchVerificationService;
+use App\Services\AuthorizeNet\CustomerProfileService;
+use App\Services\AuthorizeNet\PaymentProfileService;
+use App\Services\AuthorizeNet\TransactionService;
 use App\Services\EventStore;
 use App\Services\EventStoreContract;
 use App\Services\EventStoreMonitor;
@@ -187,6 +194,29 @@ class AppServiceProvider extends ServiceProvider
 
         $this->app->bind(CommissionDashboardProjector::class, EloquentCommissionDashboardProjector::class);
         $this->app->bind(PayoutHistoryProjector::class, EloquentPayoutHistoryProjector::class);
+
+        // Register AuthorizeNet services
+        $this->app->singleton(AuthorizeNetApi::class, fn () => new AuthorizeNetApi());
+        $this->app->singleton(CustomerProfileService::class, fn ($app) => new CustomerProfileService($app->make(AuthorizeNetApi::class)));
+        $this->app->singleton(PaymentProfileService::class, fn ($app) => new PaymentProfileService($app->make(AuthorizeNetApi::class)));
+        $this->app->singleton(TransactionService::class, fn ($app) => new TransactionService($app->make(AuthorizeNetApi::class)));
+        $this->app->singleton(AchVerificationService::class, fn ($app) => new AchVerificationService(
+            $app->make(AuthorizeNetApi::class),
+            $app->make(TransactionService::class)
+        ));
+        $this->app->singleton(AchPaymentService::class, fn ($app) => new AchPaymentService(
+            $app->make(AuthorizeNetApi::class),
+            $app->make(CustomerProfileService::class),
+            $app->make(PaymentProfileService::class),
+            $app->make(TransactionService::class),
+            $app->make(AchVerificationService::class)
+        ));
+        $this->app->singleton(AuthorizeNetService::class, fn ($app) => new AuthorizeNetService(
+            $app->make(AuthorizeNetApi::class),
+            $app->make(CustomerProfileService::class),
+            $app->make(PaymentProfileService::class),
+            $app->make(TransactionService::class)
+        ));
 
     }
 
