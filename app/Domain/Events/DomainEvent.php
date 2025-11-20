@@ -51,6 +51,16 @@ abstract class DomainEvent
     }
 
     /**
+     * Event version for schema evolution.
+     * Override in subclasses to support multiple versions.
+     * Default is 1.
+     */
+    public static function eventVersion(): int
+    {
+        return 1;
+    }
+
+    /**
      * Convert to attributes suitable for persistence in the event_store table.
      */
     public function toStoredEventAttributes(): array
@@ -59,6 +69,7 @@ abstract class DomainEvent
             'aggregate_uuid' => $this->aggregateUuid,
             'aggregate_type' => static::aggregateType(),
             'event_type' => static::eventType(),
+            'event_version' => static::eventVersion(),
             'event_data' => $this->payload,
             'metadata' => $this->metadata,
             'occurred_at' => $this->occurredAt->format('Y-m-d H:i:s.u'),

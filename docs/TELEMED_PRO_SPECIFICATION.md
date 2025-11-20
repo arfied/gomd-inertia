@@ -1843,9 +1843,9 @@ const customPreset = {
 
 - [x] Read-side subscription status query and patient dashboard subscription card.
 - [x] Patient-facing subscription cancel endpoint and dashboard cancel control (simple status update prior to full event-sourced subscription model).
-- [ ] Event-sourced subscription aggregate and `SubscriptionRenewed` events.
-- [ ] Payment method management and `PaymentMethodAdded` events.
-- [ ] Payment processing and dunning management sagas.
+- [x] Event-sourced subscription aggregate and `SubscriptionRenewed` events.
+- [x] Payment method management and `PaymentMethodAdded` events.
+- [x] Payment processing and dunning management sagas.
 - [ ] Revenue and subscription analytics (MRR, churn, LTV dashboards).
 - [ ] (Minor) Refine patient subscription cancel dialog copy to show explicit end date / plan details when available.
 - [ ] (Minor) Show "Cancelled on … / Ends on …" badges on subscription cards based on subscription status (patient and, later, staff views).

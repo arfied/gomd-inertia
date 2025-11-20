@@ -41,6 +41,16 @@ abstract class AggregateRoot
     }
 
     /**
+     * Get recorded events without clearing them.
+     *
+     * @return array<int, DomainEvent>
+     */
+    public function getRecordedEvents(): array
+    {
+        return $this->recordedEvents;
+    }
+
+    /**
      * Release and clear recorded events.
      *
      * @return array<int, DomainEvent>
