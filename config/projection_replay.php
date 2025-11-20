@@ -42,6 +42,11 @@ return [
         'formulary.updated' => App\Domain\MedicationCatalog\Events\FormularyUpdated::class,
         'formulary.medication_added' => App\Domain\MedicationCatalog\Events\MedicationAddedToFormulary::class,
         'formulary.medication_removed' => App\Domain\MedicationCatalog\Events\MedicationRemovedFromFormulary::class,
+        'commission.earned' => App\Domain\Commission\Events\CommissionEarned::class,
+        'commission.cancelled' => App\Domain\Commission\Events\CommissionCancelled::class,
+        'payout.requested' => App\Domain\Commission\Events\PayoutRequested::class,
+        'payout.processed' => App\Domain\Commission\Events\PayoutProcessed::class,
+        'referral_hierarchy.created' => App\Domain\Commission\Events\ReferralHierarchyCreated::class,
     ],
 
     'projections' => [
@@ -91,6 +96,23 @@ return [
             'formulary.updated',
             'formulary.medication_added',
             'formulary.medication_removed',
+        ],
+
+        // Rebuilds the commission dashboard projection over agent_commissions
+        'commission-dashboard' => [
+            'commission.earned',
+            'commission.cancelled',
+        ],
+
+        // Rebuilds the payout history projection over agent_payouts
+        'payout-history' => [
+            'payout.requested',
+            'payout.processed',
+        ],
+
+        // Rebuilds the referral hierarchy projection
+        'referral-hierarchy' => [
+            'referral_hierarchy.created',
         ],
     ],
 ];

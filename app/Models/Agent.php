@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\Domain\Commission\CommissionCalculationEngine;
 use App\Models\Subscription;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -11,53 +13,19 @@ use Illuminate\Support\Str;
 
 class Agent extends Model
 {
-    /**
-     * Agent tiers with their commission rates.
-     * This constant is dynamically populated from config for backward compatibility.
-     */
-    const TIERS = [
-        'SFMO' => 55,
-        'FMO' => 50,
-        'SVG' => 45,
-        'MGA' => 40,
-        'AGENT' => 30,
-        'ASSOCIATE' => 20
-    ];
+    use HasFactory;
 
     /**
-     * Get commission rates from config, falling back to constants.
-     * This method should be used instead of the TIERS constant.
+     * Get commission rates for a specific payment frequency.
      *
-     * @return array
-     */
-    public static function getCommissionTiers(): array
-    {
-        $rates = config('commission.rates.monthly');
-
-        if (!$rates) {
-            // Fallback to constants if config is not available
-            return self::TIERS;
-        }
-
-        return [
-            'SFMO' => $rates['sfmo'] ?? self::TIERS['SFMO'],
-            'FMO' => $rates['fmo'] ?? self::TIERS['FMO'],
-            'SVG' => $rates['svg'] ?? self::TIERS['SVG'],
-            'MGA' => $rates['mga'] ?? self::TIERS['MGA'],
-            'AGENT' => $rates['agent'] ?? self::TIERS['AGENT'],
-            'ASSOCIATE' => $rates['associate'] ?? self::TIERS['ASSOCIATE']
-        ];
-    }
-    /**
-     * Get commission rates from config for a specific payment frequency.
+     * Uses the CommissionCalculationEngine as the source of truth for commission rates.
      *
-     * @param string $frequency
-     * @return array
+     * @param string $frequency Payment frequency (monthly, biannual, annual)
+     * @return array Commission rates by tier (uppercase keys)
      */
     public static function getCommissionRates(string $frequency = 'monthly'): array
     {
-        $commissionService = app(\App\Services\CommissionService::class);
-        $rates = $commissionService->getRates($frequency);
+        $rates = CommissionCalculationEngine::COMMISSION_RATES[$frequency] ?? CommissionCalculationEngine::COMMISSION_RATES['monthly'];
 
         // Convert to uppercase keys to match tier names
         $result = [];
@@ -165,7 +133,7 @@ class Agent extends Model
     public function getAllowedTiersForReferrals(): array
     {
         $myTierLevel = self::TIER_HIERARCHY[$this->tier] ?? 0;
-        $tiers = self::getCommissionTiers();
+        $tiers = self::getCommissionRates('monthly');
 
         // Filter tiers that are lower than the current agent's tier
         return array_filter($tiers, function($tier, $tierName) use ($myTierLevel) {
@@ -243,111 +211,6 @@ class Agent extends Model
         }
 
         return url('/business/register') . '?agent_ref=' . $this->referral_code;
-    }
-
-    /**
-     * Check if this agent can refer agents of a specific tier.
-     */
-    public function canReferTier(string $tier): bool
-    {
-        $myTierLevel = self::TIER_HIERARCHY[$this->tier] ?? 0;
-        $targetTierLevel = self::TIER_HIERARCHY[$tier] ?? 0;
-
-        // Can only refer lower tiers
-        return $targetTierLevel < $myTierLevel;
-    }
-
-    /**
-     * Calculate commission for a given transaction amount.
-     *
-     * @param float $amount
-     * @param string $frequency Payment frequency (monthly, biannual, annual)
-     * @return float
-     */
-    public function calculateCommission(float $amount, string $frequency = 'monthly'): float
-    {
-        // Check if agent is eligible for commission (excludes LOA)
-        if (!$this->user || !$this->user->isEligibleForCommission()) {
-            return 0.0;
-        }
-
-        // Use commission service for frequency-based calculations
-        if ($frequency !== 'monthly') {
-            $commissionService = app(\App\Services\CommissionService::class);
-            return $commissionService->calculateCommission($amount, $this->tier, $frequency);
-        }
-
-        // Default to using the agent's stored commission rate for monthly
-        return round($amount * ($this->commission_rate / 100), 2);
-    }
-
-    /**
-     * Calculate commission for a given transaction amount based on subscription plan.
-     *
-     * @param float $amount
-     * @param \App\Models\Subscription|null $subscription
-     * @return float
-     */
-    public function calculateCommissionForSubscription(float $amount, ?\App\Models\Subscription $subscription = null): float
-    {
-        if (!$subscription || !$subscription->plan) {
-            // Fallback to monthly if no subscription or plan
-            return $this->calculateCommission($amount, 'monthly');
-        }
-
-        $frequency = $subscription->plan->getCommissionFrequency();
-        return $this->calculateCommission($amount, $frequency);
-    }
-
-    /**
-     * Calculate upline commission difference for a given transaction.
-     *
-     * @param float $amount
-     * @param Agent $downlineAgent
-     * @param string $frequency Payment frequency (monthly, biannual, annual)
-     * @return float
-     */
-    public function calculateUplineCommission(float $amount, Agent $downlineAgent, string $frequency = 'monthly'): float
-    {
-        // Check if this agent is eligible for upline commissions (excludes LOA)
-        if (!$this->user || !$this->user->isEligibleForCommission()) {
-            return 0.0;
-        }
-
-        // Use commission service for frequency-based calculations
-        if ($frequency !== 'monthly') {
-            $commissionService = app(\App\Services\CommissionService::class);
-            return $commissionService->calculateUplineCommission($amount, $this->tier, $downlineAgent->tier, $frequency);
-        }
-
-        // Default to using stored commission rates for monthly
-        if ($this->commission_rate <= $downlineAgent->commission_rate) {
-            return 0;
-        }
-
-        // Calculate the difference between rates
-        $rateDifference = $this->commission_rate - $downlineAgent->commission_rate;
-
-        return round($amount * ($rateDifference / 100), 2);
-    }
-
-    /**
-     * Calculate upline commission difference for a given transaction based on subscription plan.
-     *
-     * @param float $amount
-     * @param Agent $downlineAgent
-     * @param \App\Models\Subscription|null $subscription
-     * @return float
-     */
-    public function calculateUplineCommissionForSubscription(float $amount, Agent $downlineAgent, ?Subscription $subscription = null): float
-    {
-        if (!$subscription || !$subscription->plan) {
-            // Fallback to monthly if no subscription or plan
-            return $this->calculateUplineCommission($amount, $downlineAgent, 'monthly');
-        }
-
-        $frequency = $subscription->plan->getCommissionFrequency();
-        return $this->calculateUplineCommission($amount, $downlineAgent, $frequency);
     }
 
     /**

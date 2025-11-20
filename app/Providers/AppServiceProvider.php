@@ -3,6 +3,10 @@
 namespace App\Providers;
 
 use App\Application\Commands\CommandBus;
+use App\Application\Commission\CommissionDashboardProjector;
+use App\Application\Commission\EloquentCommissionDashboardProjector;
+use App\Application\Commission\EloquentPayoutHistoryProjector;
+use App\Application\Commission\PayoutHistoryProjector;
 use App\Application\MedicationCatalog\Commands\AddMedicationToFormulary;
 use App\Application\MedicationCatalog\Commands\CreateCondition;
 use App\Application\MedicationCatalog\Commands\CreateFormulary;
@@ -174,6 +178,9 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(PatientOrderTimelineFinder::class, EloquentPatientOrderTimelineFinder::class);
         $this->app->bind(StaffPatientOrderTimelineFinder::class, EloquentStaffPatientOrderTimelineFinder::class);
         $this->app->bind(PrescriptionProjector::class, EloquentPrescriptionProjector::class);
+
+        $this->app->bind(CommissionDashboardProjector::class, EloquentCommissionDashboardProjector::class);
+        $this->app->bind(PayoutHistoryProjector::class, EloquentPayoutHistoryProjector::class);
 
     }
 
