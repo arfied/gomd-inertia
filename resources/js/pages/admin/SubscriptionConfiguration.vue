@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { Head } from '@inertiajs/vue3'
+import AppLayout from '@/layouts/AppLayout.vue'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -59,7 +60,7 @@ const scheduleError = computed(() => {
 
 onMounted(async () => {
     try {
-        const response = await fetch('/admin/subscription-configuration', {
+        const response = await fetch('/admin/subscription-configuration/config', {
             headers: { 'Accept': 'application/json' },
         })
         const data = await response.json()
@@ -153,9 +154,8 @@ const saveRateLimitConfiguration = async () => {
 
 <template>
     <Head title="Subscription Configuration" />
-
-    <div class="min-h-screen bg-gray-50 p-8">
-        <div class="max-w-4xl mx-auto">
+    <AppLayout :breadcrumbs="[{ title: 'Subscription Configuration', href: '#' }]">
+        <div class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
             <div class="mb-8">
                 <h1 class="text-3xl font-bold text-gray-900">Subscription Configuration</h1>
                 <p class="text-gray-600 mt-2">Manage renewal retry schedules and rate limits</p>
@@ -319,6 +319,6 @@ const saveRateLimitConfiguration = async () => {
                 </Card>
             </div>
         </div>
-    </div>
+    </AppLayout>
 </template>
 

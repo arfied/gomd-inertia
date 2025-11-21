@@ -33,7 +33,7 @@ const mainNavItems = computed<NavItem[]>(() => {
     const user = auth.user;
 
     const isStaffOrAdmin =
-        auth.isStaffOrAdmin ?? (user && (user.role === 'admin' || user.role === 'staff'));
+        auth.isStaffOrAdmin ?? (user && ((user.roles && user.roles.some((r: any) => r.name === 'admin')) || (user.roles && user.roles.some((r: any) => r.name === 'staff'))));
 
     const isAgent = user && (user.role === 'agent' || (user.roles && user.roles.some((r: any) => r.name === 'agent')));
 
@@ -45,7 +45,7 @@ const mainNavItems = computed<NavItem[]>(() => {
         });
     }
 
-    const isAdmin = user && user.role === 'admin';
+    const isAdmin = user && (user.roles && user.roles.some((r: any) => r.name === 'admin'));
     if (isAdmin) {
         items.push({
             title: 'Subscription Config',

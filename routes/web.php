@@ -222,7 +222,7 @@ Route::middleware('auth')->group(function () {
         Route::get('subscription-configuration', [SubscriptionConfigurationController::class, 'show'])
             ->name('subscription-configuration.show');
 
-        Route::get('subscription-configuration', [SubscriptionConfigurationController::class, 'getConfiguration'])
+        Route::get('subscription-configuration/config', [SubscriptionConfigurationController::class, 'getConfiguration'])
             ->name('subscription-configuration.get');
 
         Route::post('subscription-configuration/retry', [SubscriptionConfigurationController::class, 'updateRetryConfiguration'])
