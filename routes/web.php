@@ -21,6 +21,7 @@ use App\Http\Controllers\AgentReferralLinksController;
 use App\Http\Controllers\ReferralTrackingController;
 use App\Http\Controllers\ReferralNetworkController;
 use App\Http\Controllers\SubscriptionAnalyticsDashboardController;
+use App\Http\Controllers\PaymentMethodController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
@@ -187,6 +188,32 @@ Route::middleware('auth')->group(function () {
 
         Route::get('dashboard', [SubscriptionAnalyticsDashboardController::class, 'dashboard'])
             ->name('analytics.subscription.dashboard');
+    });
+
+    // Billing Page
+    Route::get('billing', function () {
+        return Inertia::render('Billing/BillingPage');
+    })->name('billing.index');
+
+    // Payment Methods API Routes
+    Route::prefix('api/patient/payment-methods')->group(function () {
+        Route::get('/', [PaymentMethodController::class, 'index'])
+            ->name('api.payment-methods.index');
+
+        Route::post('/', [PaymentMethodController::class, 'store'])
+            ->name('api.payment-methods.store');
+
+        Route::get('{paymentMethod}', [PaymentMethodController::class, 'show'])
+            ->name('api.payment-methods.show');
+
+        Route::patch('{paymentMethod}', [PaymentMethodController::class, 'update'])
+            ->name('api.payment-methods.update');
+
+        Route::delete('{paymentMethod}', [PaymentMethodController::class, 'destroy'])
+            ->name('api.payment-methods.destroy');
+
+        Route::post('{paymentMethod}/set-default', [PaymentMethodController::class, 'setDefault'])
+            ->name('api.payment-methods.set-default');
     });
 });
 

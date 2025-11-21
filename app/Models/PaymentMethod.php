@@ -15,6 +15,10 @@ class PaymentMethod extends Model
         'user_id',
         'type',
         'is_default',
+        'verification_status',
+        'verification_attempts',
+        'last_verification_attempt_at',
+        'archived_at',
         // Credit Card fields
         'cc_last_four',
         'cc_brand',
@@ -52,7 +56,17 @@ class PaymentMethod extends Model
     protected $casts = [
         'meta_data' => 'array',
         'preferences' => 'array',
+        'is_default' => 'boolean',
+        'verification_attempts' => 'integer',
     ];
+
+    /**
+     * Get the name of the "deleted at" column.
+     */
+    public function getDeletedAtColumn(): string
+    {
+        return 'archived_at';
+    }
 
     /**
      * Get the user that owns the payment method.
@@ -228,13 +242,19 @@ class PaymentMethod extends Model
     }
 
     /**
-     * Check if ACH is valid (has token and account info)
+     * Check if ACH is valid (has token, account info, and is verified)
      *
      * @return bool
      */
     private function isAchValid(): bool
     {
-        return !empty($this->ach_token) && !empty($this->ach_account_number_last_four);
+        // ACH must have token and account info
+        if (empty($this->ach_token) || empty($this->ach_account_number_last_four)) {
+            return false;
+        }
+
+        // ACH must be verified (micro-deposit verification completed)
+        return $this->isVerified();
     }
 
     /**
@@ -276,6 +296,15 @@ class PaymentMethod extends Model
             if (!$this->ach_account_number_last_four) {
                 return 'ACH account information is missing';
             }
+            if ($this->isPendingVerification()) {
+                return 'ACH account is pending micro-deposit verification';
+            }
+            if ($this->isVerificationFailed()) {
+                return 'ACH account verification failed';
+            }
+            if (!$this->isVerified()) {
+                return 'ACH account is not verified';
+            }
         } elseif ($this->isInvoice()) {
             if (!$this->invoice_email) {
                 return 'Invoice email is missing';
@@ -286,5 +315,97 @@ class PaymentMethod extends Model
         }
 
         return null;
+    }
+
+    /**
+     * Check if payment method is verified
+     */
+    public function isVerified(): bool
+    {
+        return $this->verification_status === 'verified';
+    }
+
+    /**
+     * Check if payment method is pending verification
+     */
+    public function isPendingVerification(): bool
+    {
+        return $this->verification_status === 'pending';
+    }
+
+    /**
+     * Check if payment method verification failed
+     */
+    public function isVerificationFailed(): bool
+    {
+        return $this->verification_status === 'failed';
+    }
+
+    /**
+     * Mark payment method as verified
+     */
+    public function markAsVerified(): self
+    {
+        $this->update([
+            'verification_status' => 'verified',
+            'last_verification_attempt_at' => now(),
+        ]);
+
+        return $this;
+    }
+
+    /**
+     * Mark payment method verification as failed
+     */
+    public function markVerificationFailed(): self
+    {
+        $this->update([
+            'verification_status' => 'failed',
+            'verification_attempts' => $this->verification_attempts + 1,
+            'last_verification_attempt_at' => now(),
+        ]);
+
+        return $this;
+    }
+
+    /**
+     * Archive payment method (soft delete)
+     */
+    public function archive(): self
+    {
+        $this->update(['archived_at' => now()]);
+        return $this;
+    }
+
+    /**
+     * Check if payment method is archived
+     */
+    public function isArchived(): bool
+    {
+        return $this->archived_at !== null;
+    }
+
+    /**
+     * Scope to get only active (non-archived) payment methods
+     */
+    public function scopeActive($query)
+    {
+        return $query->whereNull('archived_at');
+    }
+
+    /**
+     * Scope to get only verified payment methods
+     */
+    public function scopeVerified($query)
+    {
+        return $query->where('verification_status', 'verified');
+    }
+
+    /**
+     * Scope to get only pending verification payment methods
+     */
+    public function scopePendingVerification($query)
+    {
+        return $query->where('verification_status', 'pending');
     }
 }
