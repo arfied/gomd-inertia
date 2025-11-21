@@ -8,6 +8,8 @@ describe('Subscription Renewal Configuration', function () {
         config(['subscription.renewal.idempotency_ttl_days' => 30]);
         config(['subscription.renewal.max_attempts' => 5]);
         config(['subscription.renewal.retry_schedule' => [1, 3, 7, 14, 30]]);
+        config(['subscription.rate_limiting.hourly_limit' => 5]);
+        config(['subscription.rate_limiting.daily_limit' => 20]);
     });
 
     describe('Idempotency Cache TTL', function () {

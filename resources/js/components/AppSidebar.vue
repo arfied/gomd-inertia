@@ -14,7 +14,7 @@ import {
 import { dashboard } from '@/routes';
 import type { AppPageProps, NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
-import { BookOpen, Folder, LayoutGrid, Users, DollarSign, Link as LinkIcon } from 'lucide-vue-next';
+import { BookOpen, Folder, LayoutGrid, Users, DollarSign, Link as LinkIcon, Settings } from 'lucide-vue-next';
 import AppLogo from './AppLogo.vue';
 import { computed } from 'vue';
 
@@ -42,6 +42,15 @@ const mainNavItems = computed<NavItem[]>(() => {
             title: 'Patients',
             href: '/dashboard/patients',
             icon: Users,
+        });
+    }
+
+    const isAdmin = user && user.role === 'admin';
+    if (isAdmin) {
+        items.push({
+            title: 'Subscription Config',
+            href: '/admin/subscription-configuration',
+            icon: Settings,
         });
     }
 

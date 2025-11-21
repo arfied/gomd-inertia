@@ -1879,7 +1879,7 @@ const customPreset = {
   - [x] Create `RenewalConfiguration` class to manage retry settings
   - [x] Update `ProcessSubscriptionRenewalJob` to use configuration
   - [x] Add validation for retry schedule (ensure delays are in ascending order)
-  - [ ] Add admin UI to view/modify retry configuration
+  - [x] Add admin UI to view/modify retry configuration
   - [x] Add tests for different retry schedules
 - [x] **Implement Rate Limit Customization** - Make rate limits configurable per user role/plan tier:
   - [x] Create `RateLimitConfiguration` model to store per-role/tier limits

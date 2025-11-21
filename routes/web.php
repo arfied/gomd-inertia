@@ -22,6 +22,7 @@ use App\Http\Controllers\ReferralTrackingController;
 use App\Http\Controllers\ReferralNetworkController;
 use App\Http\Controllers\SubscriptionAnalyticsDashboardController;
 use App\Http\Controllers\PaymentMethodController;
+use App\Http\Controllers\Admin\SubscriptionConfigurationController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
@@ -214,6 +215,21 @@ Route::middleware('auth')->group(function () {
 
         Route::post('{paymentMethod}/set-default', [PaymentMethodController::class, 'setDefault'])
             ->name('api.payment-methods.set-default');
+    });
+
+    // Admin routes
+    Route::prefix('admin')->name('admin.')->group(function () {
+        Route::get('subscription-configuration', [SubscriptionConfigurationController::class, 'show'])
+            ->name('subscription-configuration.show');
+
+        Route::get('subscription-configuration', [SubscriptionConfigurationController::class, 'getConfiguration'])
+            ->name('subscription-configuration.get');
+
+        Route::post('subscription-configuration/retry', [SubscriptionConfigurationController::class, 'updateRetryConfiguration'])
+            ->name('subscription-configuration.update-retry');
+
+        Route::post('subscription-configuration/rate-limits', [SubscriptionConfigurationController::class, 'updateRateLimitConfiguration'])
+            ->name('subscription-configuration.update-rate-limits');
     });
 });
 
