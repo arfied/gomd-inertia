@@ -205,6 +205,8 @@ const loadingSubscription = ref(true);
 const subscriptionError = ref<string | null>(null);
 const cancellingSubscription = ref(false);
 const cancelSubscriptionError = ref<string | null>(null);
+const renewingSubscription = ref(false);
+const renewSubscriptionError = ref<string | null>(null);
 
 const canCancelSubscription = computed(() => {
     if (!subscription.value) {
@@ -903,6 +905,46 @@ async function cancelSubscription() {
     }
 }
 
+async function renewSubscription() {
+    if (!subscription.value || renewingSubscription.value) {
+        return;
+    }
+
+    renewingSubscription.value = true;
+    renewSubscriptionError.value = null;
+
+    try {
+        const xsrfToken = getXsrfToken();
+
+        const response = await fetch('/patient/subscription/renew', {
+            method: 'POST',
+            headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/json',
+                ...(xsrfToken ? { 'X-XSRF-TOKEN': xsrfToken } : {}),
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify({}),
+        });
+
+        if (!response.ok) {
+            renewSubscriptionError.value = `Failed to renew subscription (${response.status})`;
+            return;
+        }
+
+        const data = (await response.json()) as {
+            subscription: PatientSubscription | null;
+        };
+
+        subscription.value = data.subscription ?? null;
+    } catch {
+        renewSubscriptionError.value =
+            'A network error occurred while renewing your subscription.';
+    } finally {
+        renewingSubscription.value = false;
+    }
+}
+
 async function loadRecentActivity() {
     try {
         const response = await fetch('/patient/activity/recent', {
@@ -1075,10 +1117,25 @@ onMounted(() => {
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Subscription</CardTitle>
-                        <CardDescription>
-                            A quick view of your current TeleMed Pro subscription.
-                        </CardDescription>
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <CardTitle>Subscription</CardTitle>
+                                <CardDescription>
+                                    A quick view of your current TeleMed Pro subscription.
+                                </CardDescription>
+                            </div>
+                            <div v-if="subscription && !loadingSubscription" class="flex flex-col gap-2">
+                                <div v-if="subscription.status === 'cancelled' && subscription.ends_at" class="inline-flex items-center rounded-full bg-destructive/10 px-2.5 py-0.5 text-xs font-medium text-destructive">
+                                    Cancelled on {{ formatActivityTimestamp(subscription.ends_at) }}
+                                </div>
+                                <div v-else-if="subscription.status === 'active' && subscription.ends_at" class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
+                                    Ends on {{ formatActivityTimestamp(subscription.ends_at) }}
+                                </div>
+                                <div v-else-if="subscription.status === 'pending_payment'" class="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">
+                                    Payment pending
+                                </div>
+                            </div>
+                        </div>
                     </CardHeader>
                     <CardContent class="space-y-2 text-sm text-muted-foreground">
                         <div
@@ -1130,8 +1187,27 @@ onMounted(() => {
                             </p>
                         </div>
                     </CardContent>
-                    <CardFooter v-if="subscription && canCancelSubscription">
-                        <Dialog>
+                    <CardFooter v-if="subscription" class="flex gap-2">
+                        <Button
+                            v-if="subscription.status === 'active' || subscription.status === 'cancelled'"
+                            type="button"
+                            size="sm"
+                            variant="default"
+                            :disabled="renewingSubscription"
+                            @click="renewSubscription"
+                        >
+                            <Spinner
+                                v-if="renewingSubscription"
+                                class="mr-2 h-4 w-4"
+                            />
+                            <span v-if="renewingSubscription">
+                                Renewing…
+                            </span>
+                            <span v-else>
+                                Renew subscription
+                            </span>
+                        </Button>
+                        <Dialog v-if="canCancelSubscription">
                             <DialogTrigger as-child>
                                 <Button
                                     type="button"
@@ -1155,9 +1231,32 @@ onMounted(() => {
                                 <DialogHeader>
                                     <DialogTitle>Cancel subscription</DialogTitle>
                                     <DialogDescription>
-                                        This will cancel your current TeleMed Pro subscription. You may lose access at the end of your current billing period depending on your plan.
+                                        You are about to cancel your subscription. Please review the details below.
                                     </DialogDescription>
                                 </DialogHeader>
+                                <div class="space-y-4 py-4">
+                                    <div class="space-y-2 rounded-lg bg-muted p-3">
+                                        <div class="flex justify-between text-sm">
+                                            <span class="text-muted-foreground">Plan:</span>
+                                            <span class="font-medium">{{ subscription.plan_name || 'TeleMed Pro plan' }}</span>
+                                        </div>
+                                        <div class="flex justify-between text-sm">
+                                            <span class="text-muted-foreground">Current status:</span>
+                                            <span class="font-medium capitalize">{{ subscription.status.replace('_', ' ') }}</span>
+                                        </div>
+                                        <div v-if="subscription.ends_at" class="flex justify-between text-sm">
+                                            <span class="text-muted-foreground">Access until:</span>
+                                            <span class="font-medium">{{ formatActivityTimestamp(subscription.ends_at) }}</span>
+                                        </div>
+                                        <div v-if="subscription.is_trial" class="flex justify-between text-sm">
+                                            <span class="text-muted-foreground">Trial status:</span>
+                                            <span class="font-medium">Active trial</span>
+                                        </div>
+                                    </div>
+                                    <p class="text-sm text-muted-foreground">
+                                        Cancelling will end your subscription at the end of your current billing period. You will lose access to TeleMed Pro services after that date.
+                                    </p>
+                                </div>
                                 <DialogFooter>
                                     <DialogClose as-child>
                                         <Button

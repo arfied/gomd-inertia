@@ -1,0 +1,15 @@
+graph LR
+    A["pending_payment_method_check"] -->|PaymentMethodChecked| B["pending_payment_attempt"]
+    B -->|PaymentAttempted| C["completed"]
+    B -->|PaymentFailed| D["failed"]
+    A -->|PaymentFailed| D
+
+    C -->|End State| E["✅ SUCCESS"]
+    D -->|End State| F["❌ FAILURE"]
+
+    style A fill:#fff3e0
+    style B fill:#fff3e0
+    style C fill:#c8e6c9
+    style D fill:#ffcdd2
+    style E fill:#c8e6c9
+    style F fill:#ffcdd2

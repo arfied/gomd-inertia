@@ -14,6 +14,7 @@ use App\Http\Controllers\PatientSelfMedicalHistoryController;
 use App\Http\Controllers\StaffPatientDocumentsController;
 use App\Http\Controllers\StaffPatientOrdersController;
 use App\Http\Controllers\StaffPatientOrderTimelineController;
+use App\Http\Controllers\StaffPatientSubscriptionController;
 use App\Http\Controllers\DoctorPatientPrescriptionsController;
 use App\Http\Controllers\AgentCommissionDashboardController;
 use App\Http\Controllers\AgentReferralLinksController;
@@ -77,6 +78,10 @@ Route::middleware('auth')->group(function () {
     Route::post('patient/subscription/cancel', [PatientSubscriptionController::class, 'cancel'])
         ->name('patient.subscription.cancel');
 
+    Route::post('patient/subscription/renew', [PatientSubscriptionController::class, 'renew'])
+        ->middleware('rate.limit.subscription.renewal')
+        ->name('patient.subscription.renew');
+
     Route::get('patient/activity/recent', [PatientActivityController::class, 'index'])
         ->name('patient.activity.recent');
 
@@ -124,6 +129,10 @@ Route::middleware('auth')->group(function () {
 
     Route::post('patients/{patientUuid}/documents', [StaffPatientDocumentsController::class, 'store'])
         ->name('patients.documents.store');
+
+    Route::post('patients/{patientUuid}/subscription/renew', [StaffPatientSubscriptionController::class, 'renew'])
+        ->middleware('rate.limit.subscription.renewal')
+        ->name('patients.subscription.renew');
 
     Route::post('patients/{patientUuid}/medical-history/allergies', [PatientMedicalHistoryController::class, 'storeAllergy'])
         ->name('patients.medical-history.allergies.store');

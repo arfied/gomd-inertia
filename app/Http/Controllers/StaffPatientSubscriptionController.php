@@ -2,72 +2,62 @@
 
 namespace App\Http\Controllers;
 
+use App\Application\Patient\Queries\GetPatientEnrollmentByPatientUuid;
 use App\Application\Patient\Queries\GetPatientSubscriptionByUserId;
 use App\Application\Queries\QueryBus;
 use App\Domain\Subscription\SubscriptionAggregate;
 use App\Domain\Subscription\SubscriptionRenewalSaga;
+use App\Models\PatientEnrollment;
 use App\Models\Subscription;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Contracts\Events\Dispatcher;
 use App\Services\EventStoreContract;
 
-class PatientSubscriptionController extends Controller
+class StaffPatientSubscriptionController extends Controller
 {
-    public function show(Request $request, QueryBus $queryBus): JsonResponse
-    {
-        $user = $request->user();
-
-        /** @var Subscription|null $subscription */
-        $subscription = $queryBus->ask(
-            new GetPatientSubscriptionByUserId($user->id)
-        );
-
-        return $this->formatSubscriptionResponse($subscription);
-    }
-
-    public function cancel(Request $request, QueryBus $queryBus): JsonResponse
-    {
-        $user = $request->user();
-
-        /** @var Subscription|null $subscription */
-        $subscription = $queryBus->ask(
-            new GetPatientSubscriptionByUserId($user->id)
-        );
-
-        if (! $subscription instanceof Subscription) {
-            return $this->formatSubscriptionResponse(null);
-        }
-
-        $subscription->status = Subscription::STATUS_CANCELLED;
-        $subscription->cancelled_at = now();
-        $subscription->save();
-
-        return $this->formatSubscriptionResponse($subscription);
-    }
-
     public function renew(
+        string $patientUuid,
         Request $request,
         QueryBus $queryBus,
         EventStoreContract $eventStore,
         Dispatcher $dispatcher
     ): JsonResponse {
-        $user = $request->user();
+        /** @var User|null $authUser */
+        $authUser = $request->user();
 
-        // Authorization: Only the subscription owner can renew
-        if (! $user) {
-            return response()->json(['error' => 'Unauthorized'], 401);
+        // Authorization: Only staff/admin can renew patient subscriptions
+        abort_unless(
+            $authUser && ($authUser->hasAnyRole(['admin', 'staff']) || in_array($authUser->role, ['admin', 'staff'], true)),
+            403,
+        );
+
+        // Get the patient enrollment by patient UUID
+        /** @var PatientEnrollment|null $enrollment */
+        $enrollment = $queryBus->ask(
+            new GetPatientEnrollmentByPatientUuid($patientUuid)
+        );
+
+        if (! $enrollment instanceof PatientEnrollment) {
+            return response()->json(['error' => 'Patient not found'], 404);
+        }
+
+        $patient = User::find($enrollment->user_id);
+
+        if (! $patient) {
+            return response()->json(['error' => 'Patient not found'], 404);
         }
 
         /** @var Subscription|null $subscription */
         $subscription = $queryBus->ask(
-            new GetPatientSubscriptionByUserId($user->id)
+            new GetPatientSubscriptionByUserId($patient->id)
         );
 
         if (! $subscription instanceof Subscription) {
             return response()->json([
-                'error' => 'No active subscription found',
+                'error' => 'No active subscription found for this patient',
             ], 404);
         }
 
@@ -98,7 +88,7 @@ class PatientSubscriptionController extends Controller
         $correlationId = Str::uuid()->toString();
         $sagaPayload = [
             'subscription_id' => $subscription->id,
-            'user_id' => $user->id,
+            'user_id' => $patient->id,
             'plan_id' => $subscription->plan_id,
             'amount' => $subscription->plan->price ?? 0,
             'billing_date' => now()->toDateString(),
@@ -118,21 +108,16 @@ class PatientSubscriptionController extends Controller
         $subscription->cancelled_at = null;
         $subscription->save();
 
-        return $this->formatSubscriptionResponse($subscription);
-    }
-
-    private function formatSubscriptionResponse(?Subscription $subscription, int $status = 200): JsonResponse
-    {
         return response()->json([
-            'subscription' => $subscription ? [
+            'subscription' => [
                 'id' => $subscription->id,
                 'status' => $subscription->status,
                 'plan_name' => optional($subscription->plan)->name,
                 'is_trial' => $subscription->is_trial,
                 'starts_at' => optional($subscription->starts_at)?->toISOString(),
                 'ends_at' => optional($subscription->ends_at)?->toISOString(),
-            ] : null,
-        ], $status);
+            ],
+        ]);
     }
 }
 

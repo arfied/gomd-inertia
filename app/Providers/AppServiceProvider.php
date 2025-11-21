@@ -144,6 +144,7 @@ use App\Domain\Subscription\Events\SubscriptionRenewed;
 use App\Domain\Subscription\Events\SubscriptionCancelled;
 use App\Domain\Subscription\Events\PaymentAttempted;
 use App\Domain\Subscription\Events\PaymentFailed;
+use App\Domain\Subscription\Events\SubscriptionRenewalSagaStarted;
 use App\Services\AuthorizeNet\AuthorizeNetApi;
 use App\Services\AuthorizeNet\AuthorizeNetService;
 use App\Services\AuthorizeNet\AchPaymentService;
@@ -260,6 +261,9 @@ class AppServiceProvider extends ServiceProvider
         $dispatcher->listen(SubscriptionCancelled::class, SubscriptionCancelledHandler::class);
         $dispatcher->listen(PaymentAttempted::class, PaymentAttemptedHandler::class);
         $dispatcher->listen(PaymentFailed::class, PaymentFailedHandler::class);
+
+        // Register subscription renewal saga listener
+        $dispatcher->listen(SubscriptionRenewalSagaStarted::class, \App\Listeners\SubscriptionRenewalSagaStartedListener::class);
 
         $this->app->resolving(CommandBus::class, function (CommandBus $bus, $app) {
             $bus->register(

@@ -187,4 +187,104 @@ class PaymentMethod extends Model
     {
         return $this->setPreference("services.{$service}.is_preferred", $isPreferred);
     }
+
+    /**
+     * Check if this payment method is valid for processing
+     *
+     * @return bool
+     */
+    public function isValid(): bool
+    {
+        if ($this->isCreditCard()) {
+            return $this->isCreditCardValid();
+        } elseif ($this->isAch()) {
+            return $this->isAchValid();
+        } elseif ($this->isInvoice()) {
+            return $this->isInvoiceValid();
+        }
+
+        return false;
+    }
+
+    /**
+     * Check if credit card is valid (not expired, has token)
+     *
+     * @return bool
+     */
+    private function isCreditCardValid(): bool
+    {
+        if (!$this->cc_token || !$this->cc_expiration_month || !$this->cc_expiration_year) {
+            return false;
+        }
+
+        // Check if card is expired
+        $expiryDate = \Carbon\Carbon::createFromDate(
+            $this->cc_expiration_year,
+            $this->cc_expiration_month,
+            1
+        )->endOfMonth();
+
+        return $expiryDate->isFuture();
+    }
+
+    /**
+     * Check if ACH is valid (has token and account info)
+     *
+     * @return bool
+     */
+    private function isAchValid(): bool
+    {
+        return !empty($this->ach_token) && !empty($this->ach_account_number_last_four);
+    }
+
+    /**
+     * Check if invoice is valid (has email and company)
+     *
+     * @return bool
+     */
+    private function isInvoiceValid(): bool
+    {
+        return !empty($this->invoice_email) && !empty($this->invoice_company_name);
+    }
+
+    /**
+     * Get validation error message if payment method is invalid
+     *
+     * @return string|null
+     */
+    public function getValidationError(): ?string
+    {
+        if ($this->isCreditCard()) {
+            if (!$this->cc_token) {
+                return 'Credit card token is missing';
+            }
+            if (!$this->cc_expiration_month || !$this->cc_expiration_year) {
+                return 'Credit card expiration date is missing';
+            }
+            $expiryDate = \Carbon\Carbon::createFromDate(
+                $this->cc_expiration_year,
+                $this->cc_expiration_month,
+                1
+            )->endOfMonth();
+            if ($expiryDate->isPast()) {
+                return 'Credit card has expired';
+            }
+        } elseif ($this->isAch()) {
+            if (!$this->ach_token) {
+                return 'ACH token is missing';
+            }
+            if (!$this->ach_account_number_last_four) {
+                return 'ACH account information is missing';
+            }
+        } elseif ($this->isInvoice()) {
+            if (!$this->invoice_email) {
+                return 'Invoice email is missing';
+            }
+            if (!$this->invoice_company_name) {
+                return 'Invoice company name is missing';
+            }
+        }
+
+        return null;
+    }
 }

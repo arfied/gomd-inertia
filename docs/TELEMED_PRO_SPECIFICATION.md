@@ -1846,9 +1846,63 @@ const customPreset = {
 - [x] Event-sourced subscription aggregate and `SubscriptionRenewed` events.
 - [x] Payment method management and `PaymentMethodAdded` events.
 - [x] Payment processing and dunning management sagas.
-- [ ] Revenue and subscription analytics (MRR, churn, LTV dashboards).
-- [ ] (Minor) Refine patient subscription cancel dialog copy to show explicit end date / plan details when available.
-- [ ] (Minor) Show "Cancelled on … / Ends on …" badges on subscription cards based on subscription status (patient and, later, staff views).
+- [x] Revenue and subscription analytics (MRR, churn, LTV dashboards).
+- [x] (Minor) Refine patient subscription cancel dialog copy to show explicit end date / plan details when available.
+- [x] (Minor) Show "Cancelled on … / Ends on …" badges on subscription cards based on subscription status (patient and, later, staff views).
+- [x] Payment method validation (credit card expiration, token validation, ACH account validation).
+- [x] Retry logic with exponential backoff for failed payments (1, 3, 7, 14, 30 days).
+- [x] Idempotency checks to prevent duplicate renewals.
+- [x] Enhanced logging with correlation IDs for renewal flow tracking.
+- [x] Rate limiting on renewal endpoints (5/hour, 20/day per user).
+- [ ] **Implement Billing Page for Payment Method Management** - Comprehensive patient-facing billing page with:
+  - [ ] Payment method display (credit card, ACH, invoice) with icons and status badges
+  - [ ] Add payment method functionality (credit card form, ACH form, invoice form)
+  - [ ] Edit payment method (non-sensitive fields only)
+  - [ ] Remove payment method with confirmation and safeguards
+  - [ ] ACH verification flow (micro-deposit verification)
+  - [ ] Set payment method as default
+  - [ ] Security & validation (client-side and server-side)
+  - [ ] User experience (loading states, toasts, empty states, responsive design)
+  - [ ] Frontend components: `BillingPage.vue`, `PaymentMethodList.vue`, `PaymentMethodCard.vue`, `AddPaymentMethodModal.vue`, `CreditCardForm.vue`, `AchForm.vue`, `InvoiceForm.vue`, `VerificationFlow.vue`
+  - [ ] State management for payment methods with Pinia
+  - [ ] Comprehensive tests (unit, feature, browser tests)
+  - [ ] User and developer documentation
+  - **Success Metrics**: 95%+ success rate, <5% support tickets, 4.5+ star rating, 99.9% uptime
+- [ ] **Make Idempotency Cache TTL Configurable** - Move hardcoded 30-day TTL to configuration:
+  - [ ] Add `RENEWAL_IDEMPOTENCY_TTL_DAYS` to `.env` configuration
+  - [ ] Update `ProcessSubscriptionRenewalJob` to use configurable TTL
+  - [ ] Add configuration validation in `AppServiceProvider`
+  - [ ] Update documentation with recommended TTL values
+  - [ ] Add tests for different TTL configurations
+- [ ] **Add Retry Schedule Flexibility** - Make retry schedule and max attempts configurable:
+  - [ ] Add `RENEWAL_MAX_ATTEMPTS` and `RENEWAL_RETRY_SCHEDULE` to `.env`
+  - [ ] Create `RenewalConfiguration` class to manage retry settings
+  - [ ] Update `ProcessSubscriptionRenewalJob` to use configuration
+  - [ ] Add validation for retry schedule (ensure delays are in ascending order)
+  - [ ] Add admin UI to view/modify retry configuration
+  - [ ] Add tests for different retry schedules
+- [ ] **Implement Rate Limit Customization** - Make rate limits configurable per user role/plan tier:
+  - [ ] Create `RateLimitConfiguration` model to store per-role/tier limits
+  - [ ] Update `RateLimitSubscriptionRenewal` middleware to check user role/plan
+  - [ ] Add admin UI to configure rate limits by role/tier
+  - [ ] Add migration for rate limit configuration table
+  - [ ] Implement caching for rate limit configuration
+  - [ ] Add tests for different role/tier configurations
+- [ ] **Add Payment Method Verification Status Validation** - Validate ACH micro-deposit verification:
+  - [ ] Add `verification_status` field to `payment_methods` table (pending, verified, failed)
+  - [ ] Add `verification_attempts` and `last_verification_attempt_at` fields
+  - [ ] Update `PaymentMethod` model with verification status methods
+  - [ ] Prevent payment processing for unverified ACH accounts
+  - [ ] Add verification status display in billing page
+  - [ ] Add tests for verification status validation
+- [ ] **Implement Monitoring Alerts for Failed Renewals** - Add guidance and tooling for renewal failure monitoring:
+  - [ ] Create `RenewalFailureAlert` event for failed renewals after all retries
+  - [ ] Add alert configuration to `.env` (email recipients, Slack webhook, etc.)
+  - [ ] Create `RenewalFailureAlertHandler` to send notifications
+  - [ ] Add admin dashboard widget showing failed renewals
+  - [ ] Create CLI command to check renewal failure status
+  - [ ] Add documentation for setting up alerts (email, Slack, PagerDuty)
+  - [ ] Add tests for alert triggering and delivery
 
 ### 6. Clinical & Compliance
 

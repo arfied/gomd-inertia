@@ -160,6 +160,8 @@ const countError = ref<string | null>(null)
 const selectedPatient = ref<PatientDetail | null>(null)
 const loadingDetail = ref(false)
 const detailError = ref<string | null>(null)
+const renewingPatientSubscription = ref(false)
+const renewPatientSubscriptionError = ref<string | null>(null)
 const showAllergyForm = ref(false)
 const allergyForm = ref({
     allergen: '',
@@ -734,6 +736,42 @@ async function submitPatientDocument() {
     }
 }
 
+async function renewPatientSubscription() {
+    if (!selectedPatient.value || renewingPatientSubscription.value) {
+        return
+    }
+
+    renewingPatientSubscription.value = true
+    renewPatientSubscriptionError.value = null
+
+    try {
+        const patientUuid = selectedPatient.value.patient_uuid
+
+        const response = await fetch(`/patients/${patientUuid}/subscription/renew`, {
+            method: 'POST',
+            headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': getCsrfToken(),
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify({}),
+        })
+
+        if (!response.ok) {
+            renewPatientSubscriptionError.value = `Failed to renew subscription (${response.status})`
+            return
+        }
+
+        // Reload patient details to get updated subscription
+        await loadDetail(patientUuid)
+    } catch {
+        renewPatientSubscriptionError.value = 'A network error occurred while renewing the subscription.'
+    } finally {
+        renewingPatientSubscription.value = false
+    }
+}
+
 function applyFilters() {
     count.value = null
     void loadPatients()
@@ -975,7 +1013,7 @@ onMounted(() => {
                             </p>
                         </div>
 
-                        <div v-if="selectedPatient.subscription">
+                        <div v-if="selectedPatient.subscription" class="space-y-2">
                             <p>
                                 Plan:
                                 {{ selectedPatient.subscription.plan_name || 'TeleMed Pro plan' }}
@@ -1001,6 +1039,32 @@ onMounted(() => {
                                     {{ formatDate(selectedPatient.subscription.ends_at) }}
                                 </span>
                             </p>
+                            <div v-if="selectedPatient.subscription.status === 'cancelled' && selectedPatient.subscription.ends_at" class="inline-flex items-center rounded-full bg-destructive/10 px-2.5 py-0.5 text-xs font-medium text-destructive">
+                                Cancelled on {{ formatDate(selectedPatient.subscription.ends_at) }}
+                            </div>
+                            <div v-else-if="selectedPatient.subscription.status === 'active' && selectedPatient.subscription.ends_at" class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
+                                Ends on {{ formatDate(selectedPatient.subscription.ends_at) }}
+                            </div>
+                            <div v-if="selectedPatient.subscription.status === 'active'" class="flex gap-2 pt-2">
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="default"
+                                    :disabled="renewingPatientSubscription"
+                                    @click="renewPatientSubscription"
+                                >
+                                    <Spinner
+                                        v-if="renewingPatientSubscription"
+                                        class="mr-2 h-4 w-4"
+                                    />
+                                    <span v-if="renewingPatientSubscription">
+                                        Renewing…
+                                    </span>
+                                    <span v-else>
+                                        Renew subscription
+                                    </span>
+                                </Button>
+                            </div>
                         </div>
 
 
