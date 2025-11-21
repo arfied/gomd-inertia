@@ -1854,55 +1854,55 @@ const customPreset = {
 - [x] Idempotency checks to prevent duplicate renewals.
 - [x] Enhanced logging with correlation IDs for renewal flow tracking.
 - [x] Rate limiting on renewal endpoints (5/hour, 20/day per user).
-- [ ] **Implement Billing Page for Payment Method Management** - Comprehensive patient-facing billing page with:
-  - [ ] Payment method display (credit card, ACH, invoice) with icons and status badges
-  - [ ] Add payment method functionality (credit card form, ACH form, invoice form)
-  - [ ] Edit payment method (non-sensitive fields only)
-  - [ ] Remove payment method with confirmation and safeguards
-  - [ ] ACH verification flow (micro-deposit verification)
-  - [ ] Set payment method as default
-  - [ ] Security & validation (client-side and server-side)
-  - [ ] User experience (loading states, toasts, empty states, responsive design)
-  - [ ] Frontend components: `BillingPage.vue`, `PaymentMethodList.vue`, `PaymentMethodCard.vue`, `AddPaymentMethodModal.vue`, `CreditCardForm.vue`, `AchForm.vue`, `InvoiceForm.vue`, `VerificationFlow.vue`
-  - [ ] State management for payment methods with Pinia
+- [x] **Implement Billing Page for Payment Method Management** - Comprehensive patient-facing billing page with:
+  - [x] Payment method display (credit card, ACH, invoice) with icons and status badges
+  - [x] Add payment method functionality (credit card form, ACH form, invoice form)
+  - [x] Edit payment method (non-sensitive fields only)
+  - [x] Remove payment method with confirmation and safeguards
+  - [x] ACH verification flow (micro-deposit verification)
+  - [x] Set payment method as default
+  - [x] Security & validation (client-side and server-side)
+  - [x] User experience (loading states, toasts, empty states, responsive design)
+  - [x] Frontend components: `BillingPage.vue`, `PaymentMethodList.vue`, `PaymentMethodCard.vue`, `AddPaymentMethodModal.vue`, `CreditCardForm.vue`, `AchForm.vue`, `InvoiceForm.vue`
+  - [x] State management for payment methods with Pinia
   - [ ] Comprehensive tests (unit, feature, browser tests)
   - [ ] User and developer documentation
   - **Success Metrics**: 95%+ success rate, <5% support tickets, 4.5+ star rating, 99.9% uptime
-- [ ] **Make Idempotency Cache TTL Configurable** - Move hardcoded 30-day TTL to configuration:
-  - [ ] Add `RENEWAL_IDEMPOTENCY_TTL_DAYS` to `.env` configuration
-  - [ ] Update `ProcessSubscriptionRenewalJob` to use configurable TTL
-  - [ ] Add configuration validation in `AppServiceProvider`
-  - [ ] Update documentation with recommended TTL values
-  - [ ] Add tests for different TTL configurations
-- [ ] **Add Retry Schedule Flexibility** - Make retry schedule and max attempts configurable:
-  - [ ] Add `RENEWAL_MAX_ATTEMPTS` and `RENEWAL_RETRY_SCHEDULE` to `.env`
-  - [ ] Create `RenewalConfiguration` class to manage retry settings
-  - [ ] Update `ProcessSubscriptionRenewalJob` to use configuration
-  - [ ] Add validation for retry schedule (ensure delays are in ascending order)
+- [x] **Make Idempotency Cache TTL Configurable** - Move hardcoded 30-day TTL to configuration:
+  - [x] Add `RENEWAL_IDEMPOTENCY_TTL_DAYS` to `.env` configuration
+  - [x] Update `ProcessSubscriptionRenewalJob` to use configurable TTL
+  - [x] Add configuration validation in `AppServiceProvider`
+  - [x] Update documentation with recommended TTL values
+  - [x] Add tests for different TTL configurations
+- [x] **Add Retry Schedule Flexibility** - Make retry schedule and max attempts configurable:
+  - [x] Add `RENEWAL_MAX_ATTEMPTS` and `RENEWAL_RETRY_SCHEDULE` to `.env`
+  - [x] Create `RenewalConfiguration` class to manage retry settings
+  - [x] Update `ProcessSubscriptionRenewalJob` to use configuration
+  - [x] Add validation for retry schedule (ensure delays are in ascending order)
   - [ ] Add admin UI to view/modify retry configuration
-  - [ ] Add tests for different retry schedules
-- [ ] **Implement Rate Limit Customization** - Make rate limits configurable per user role/plan tier:
-  - [ ] Create `RateLimitConfiguration` model to store per-role/tier limits
-  - [ ] Update `RateLimitSubscriptionRenewal` middleware to check user role/plan
+  - [x] Add tests for different retry schedules
+- [x] **Implement Rate Limit Customization** - Make rate limits configurable per user role/plan tier:
+  - [x] Create `RateLimitConfiguration` model to store per-role/tier limits
+  - [x] Update `RateLimitSubscriptionRenewal` middleware to check user role/plan
   - [ ] Add admin UI to configure rate limits by role/tier
   - [ ] Add migration for rate limit configuration table
   - [ ] Implement caching for rate limit configuration
-  - [ ] Add tests for different role/tier configurations
-- [ ] **Add Payment Method Verification Status Validation** - Validate ACH micro-deposit verification:
-  - [ ] Add `verification_status` field to `payment_methods` table (pending, verified, failed)
-  - [ ] Add `verification_attempts` and `last_verification_attempt_at` fields
-  - [ ] Update `PaymentMethod` model with verification status methods
-  - [ ] Prevent payment processing for unverified ACH accounts
-  - [ ] Add verification status display in billing page
-  - [ ] Add tests for verification status validation
-- [ ] **Implement Monitoring Alerts for Failed Renewals** - Add guidance and tooling for renewal failure monitoring:
-  - [ ] Create `RenewalFailureAlert` event for failed renewals after all retries
-  - [ ] Add alert configuration to `.env` (email recipients, Slack webhook, etc.)
-  - [ ] Create `RenewalFailureAlertHandler` to send notifications
+  - [x] Add tests for different role/tier configurations
+- [x] **Add Payment Method Verification Status Validation** - Validate ACH micro-deposit verification:
+  - [x] Add `verification_status` field to `payment_methods` table (pending, verified, failed)
+  - [x] Add `verification_attempts` and `last_verification_attempt_at` fields
+  - [x] Update `PaymentMethod` model with verification status methods
+  - [x] Prevent payment processing for unverified ACH accounts
+  - [x] Add verification status display in billing page
+  - [x] Add tests for verification status validation
+- [x] **Implement Monitoring Alerts for Failed Renewals** - Add guidance and tooling for renewal failure monitoring:
+  - [x] Create `RenewalFailureAlert` event for failed renewals after all retries
+  - [x] Add alert configuration to `.env` (email recipients, Slack webhook, etc.)
+  - [x] Create `RenewalFailureAlertHandler` to send notifications
   - [ ] Add admin dashboard widget showing failed renewals
-  - [ ] Create CLI command to check renewal failure status
+  - [x] Create CLI command to check renewal failure status
   - [ ] Add documentation for setting up alerts (email, Slack, PagerDuty)
-  - [ ] Add tests for alert triggering and delivery
+  - [x] Add tests for alert triggering and delivery
 
 ### 6. Clinical & Compliance
 

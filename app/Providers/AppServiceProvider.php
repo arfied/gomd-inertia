@@ -148,6 +148,9 @@ use App\Domain\Subscription\Events\SubscriptionRenewalSagaStarted;
 use App\Services\AuthorizeNet\AuthorizeNetApi;
 use App\Services\AuthorizeNet\AuthorizeNetService;
 use App\Services\AuthorizeNet\AchPaymentService;
+use App\Models\PaymentMethod;
+use App\Policies\PaymentMethodPolicy;
+use Illuminate\Support\Facades\Gate;
 use App\Services\AuthorizeNet\AchVerificationService;
 use App\Services\AuthorizeNet\CustomerProfileService;
 use App\Services\AuthorizeNet\PaymentProfileService;
@@ -264,6 +267,12 @@ class AppServiceProvider extends ServiceProvider
 
         // Register subscription renewal saga listener
         $dispatcher->listen(SubscriptionRenewalSagaStarted::class, \App\Listeners\SubscriptionRenewalSagaStartedListener::class);
+
+        // Register policies
+        Gate::policy(PaymentMethod::class, PaymentMethodPolicy::class);
+
+        // Validate subscription renewal configuration
+        $this->validateSubscriptionConfiguration();
 
         $this->app->resolving(CommandBus::class, function (CommandBus $bus, $app) {
             $bus->register(
@@ -494,5 +503,52 @@ class AppServiceProvider extends ServiceProvider
             );
 
         });
+    }
+
+    /**
+     * Validate subscription renewal configuration
+     */
+    private function validateSubscriptionConfiguration(): void
+    {
+        $ttlDays = (int) config('subscription.renewal.idempotency_ttl_days', 30);
+        $maxAttempts = (int) config('subscription.renewal.max_attempts', 5);
+        $retrySchedule = config('subscription.renewal.retry_schedule', [1, 3, 7, 14, 30]);
+
+        // Validate TTL is positive
+        if ($ttlDays <= 0) {
+            throw new \InvalidArgumentException(
+                'RENEWAL_IDEMPOTENCY_TTL_DAYS must be a positive integer. Got: ' . $ttlDays
+            );
+        }
+
+        // Validate max attempts is positive
+        if ($maxAttempts <= 0) {
+            throw new \InvalidArgumentException(
+                'RENEWAL_MAX_ATTEMPTS must be a positive integer. Got: ' . $maxAttempts
+            );
+        }
+
+        // Validate retry schedule has correct number of entries
+        if (count($retrySchedule) < $maxAttempts - 1) {
+            throw new \InvalidArgumentException(
+                'RENEWAL_RETRY_SCHEDULE must have at least ' . ($maxAttempts - 1) . ' entries. Got: ' . count($retrySchedule)
+            );
+        }
+
+        // Validate retry schedule values are positive and in ascending order
+        $previousValue = 0;
+        foreach ($retrySchedule as $index => $delay) {
+            if ($delay <= 0) {
+                throw new \InvalidArgumentException(
+                    "RENEWAL_RETRY_SCHEDULE[$index] must be a positive integer. Got: $delay"
+                );
+            }
+            if ($delay <= $previousValue) {
+                throw new \InvalidArgumentException(
+                    "RENEWAL_RETRY_SCHEDULE must be in ascending order. Got: " . implode(', ', $retrySchedule)
+                );
+            }
+            $previousValue = $delay;
+        }
     }
 }

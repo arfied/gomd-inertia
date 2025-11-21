@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Services\AuthorizeNet\AuthorizeNetService;
 use App\Services\AuthorizeNet\AchPaymentService;
 use App\Domain\Subscription\SubscriptionRenewalSaga;
+use App\Domain\Subscription\Events\RenewalFailureAlert;
 use App\Services\EventStoreContract;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -28,9 +29,9 @@ class ProcessSubscriptionRenewalJob implements ShouldQueue
     public float $amount;
     public string $correlationId;
     public int $attemptNumber = 0;
-    public int $maxAttempts = 5;
+    public int $maxAttempts;
     /** @var array<int> */
-    public array $retrySchedule = [1, 3, 7, 14, 30]; // days
+    public array $retrySchedule; // days
 
     public function __construct(string $sagaUuid, int $subscriptionId, int $userId, float $amount, ?string $correlationId = null)
     {
@@ -39,6 +40,11 @@ class ProcessSubscriptionRenewalJob implements ShouldQueue
         $this->userId = $userId;
         $this->amount = $amount;
         $this->correlationId = $correlationId ?? Str::uuid()->toString();
+
+        // Load configuration
+        $this->maxAttempts = (int) config('subscription.renewal.max_attempts', 5);
+        $this->retrySchedule = config('subscription.renewal.retry_schedule', [1, 3, 7, 14, 30]);
+
         $this->onQueue('subscription-renewal');
     }
 
@@ -140,7 +146,8 @@ class ProcessSubscriptionRenewalJob implements ShouldQueue
     private function markAsProcessed(): void
     {
         $cacheKey = "renewal_processed:{$this->sagaUuid}";
-        \Illuminate\Support\Facades\Cache::put($cacheKey, true, now()->addDays(30));
+        $ttlDays = (int) config('subscription.renewal_idempotency_ttl_days', 30);
+        \Illuminate\Support\Facades\Cache::put($cacheKey, true, now()->addDays($ttlDays));
     }
 
     /**
@@ -280,6 +287,18 @@ class ProcessSubscriptionRenewalJob implements ShouldQueue
             'reason' => $reason,
             'correlation_id' => $this->correlationId,
         ]);
+
+        // Dispatch failure alert event
+        $dispatcher->dispatch(new RenewalFailureAlert(
+            $this->sagaUuid,
+            $this->subscriptionId,
+            $this->userId,
+            $this->amount,
+            $reason,
+            $this->attemptNumber,
+            $this->maxAttempts,
+            $this->correlationId,
+        ));
 
         $this->markAsProcessed();
     }

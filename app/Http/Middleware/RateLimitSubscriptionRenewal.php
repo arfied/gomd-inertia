@@ -24,9 +24,13 @@ class RateLimitSubscriptionRenewal
             return $next($request);
         }
 
-        // Rate limit: 5 renewals per hour per user
+        // Get configurable rate limits
+        $hourlyLimit = (int) config('subscription.rate_limiting.hourly_limit', 5);
+        $dailyLimit = (int) config('subscription.rate_limiting.daily_limit', 20);
+
+        // Rate limit: hourly per user
         $hourlyKey = "renewal:hourly:{$user->id}";
-        if (RateLimiter::tooManyAttempts($hourlyKey, 5)) {
+        if (RateLimiter::tooManyAttempts($hourlyKey, $hourlyLimit)) {
             return response()->json([
                 'error' => 'Too many renewal attempts. Please try again later.',
                 'retry_after' => RateLimiter::availableIn($hourlyKey),
@@ -35,9 +39,9 @@ class RateLimitSubscriptionRenewal
 
         RateLimiter::hit($hourlyKey, 60); // 60 seconds = 1 minute decay
 
-        // Rate limit: 20 renewals per day per user
+        // Rate limit: daily per user
         $dailyKey = "renewal:daily:{$user->id}";
-        if (RateLimiter::tooManyAttempts($dailyKey, 20)) {
+        if (RateLimiter::tooManyAttempts($dailyKey, $dailyLimit)) {
             return response()->json([
                 'error' => 'Daily renewal limit exceeded. Please try again tomorrow.',
                 'retry_after' => RateLimiter::availableIn($dailyKey),
