@@ -56,7 +56,7 @@ const handleConsentSubmit = async (consents: Record<string, boolean>) => {
     try {
         const form = new FormData()
         Object.keys(consents).forEach(key => {
-            form.append(key, consents[key])
+            form.append(key, String(consents[key]))
         })
 
         const response = await fetch('/compliance/consents', {
@@ -76,6 +76,24 @@ const handleConsentSubmit = async (consents: Record<string, boolean>) => {
     }
 }
 
+const handleVerifyLicense = async (license: License) => {
+    try {
+        const response = await fetch(`/compliance/licenses/${license.id}/verify`, {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+            }
+        })
+
+        if (response.ok) {
+            window.location.reload()
+        }
+    } catch (error) {
+        console.error('Failed to verify license:', error)
+    }
+}
+
 const activeLicenses = computed(() => props.licenses.data.filter(l => l.status === 'active').length)
 const expiredLicenses = computed(() => props.licenses.data.filter(l => l.status === 'expired').length)
 
@@ -87,7 +105,7 @@ const breadcrumbs: BreadcrumbItemType[] = [
 
 <template>
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="space-y-6">
+        <div class="space-y-6 p-4">
             <div>
                 <h1 class="text-3xl font-bold">Compliance Dashboard</h1>
                 <p class="text-muted-foreground">Manage patient consents and provider licenses</p>

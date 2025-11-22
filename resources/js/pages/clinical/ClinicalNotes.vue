@@ -46,7 +46,7 @@ const handleNoteCreated = () => {
     <Layout>
         <Head title="Clinical Notes" />
 
-        <div class="space-y-6">
+        <div class="space-y-6 p-4">
             <div class="flex justify-between items-center">
                 <div>
                     <h1 class="text-3xl font-bold">Clinical Notes</h1>

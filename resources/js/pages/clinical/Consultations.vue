@@ -69,7 +69,7 @@ const handleScheduleConsultation = async (data: any) => {
     <AppLayout :breadcrumbs="breadcrumbs">
         <Head title="Consultations" />
 
-        <div class="space-y-6">
+        <div class="space-y-6 p-4">
             <div class="flex justify-between items-center">
                 <div>
                     <h1 class="text-3xl font-bold">Consultations</h1>

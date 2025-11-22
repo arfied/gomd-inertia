@@ -17,13 +17,13 @@ class ClinicalNoteReadModel extends Model
     protected $table = 'clinical_note_read_model';
 
     protected $fillable = [
-        'note_uuid',
+        'clinical_note_uuid',
         'patient_id',
         'doctor_id',
         'content',
         'note_type',
         'recorded_at',
-        'attachments_count',
+        'attachments',
         'created_at',
     ];
 

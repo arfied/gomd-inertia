@@ -70,53 +70,53 @@ const startQuestionnaire = (questionnaire: Questionnaire) => {
 }
 
 const breadcrumbs: BreadcrumbItemType[] = [
-  { title: 'Clinical', href: '/clinical' },
-  { title: 'Questionnaires', href: '/clinical/questionnaires' }
+    { title: 'Clinical', href: '/clinical' },
+    { title: 'Questionnaires', href: '/clinical/questionnaires' }
 ]
 </script>
 
 <template>
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="space-y-6">
+        <div class="space-y-6 p-4">
             <div>
                 <h1 class="text-3xl font-bold">Questionnaires</h1>
                 <p class="text-muted-foreground">Complete patient health questionnaires</p>
             </div>
 
-        <!-- Form View -->
-        <div v-if="showForm && selectedQuestionnaire" class="flex justify-center">
-            <QuestionnaireForm
-                :title="selectedQuestionnaire.title"
-                :description="selectedQuestionnaire.description"
-                :questions="selectedQuestionnaire.questions"
-                @submit="handleSubmit"
-                @cancel="handleCancel"
-            />
-        </div>
-
-        <!-- List View -->
-        <div v-else class="grid gap-4">
-            <div v-for="questionnaire in props.questionnaires.data" :key="questionnaire.id">
-                <Card>
-                    <CardHeader>
-                        <CardTitle>{{ questionnaire.title }}</CardTitle>
-                        <CardDescription>{{ questionnaire.description }}</CardDescription>
-                    </CardHeader>
-                    <CardContent class="flex justify-between items-center">
-                        <div class="text-sm text-muted-foreground">
-                            {{ questionnaire.questions.length }} questions
-                        </div>
-                        <Button @click="startQuestionnaire(questionnaire)">
-                            Start Questionnaire
-                        </Button>
-                    </CardContent>
-                </Card>
+            <!-- Form View -->
+            <div v-if="showForm && selectedQuestionnaire" class="flex justify-center">
+                <QuestionnaireForm
+                    :title="selectedQuestionnaire.title"
+                    :description="selectedQuestionnaire.description"
+                    :questions="selectedQuestionnaire.questions"
+                    @submit="handleSubmit"
+                    @cancel="handleCancel"
+                />
             </div>
 
-            <div v-if="props.questionnaires.data.length === 0" class="text-center py-12 text-muted-foreground">
-                <p>No questionnaires available</p>
+            <!-- List View -->
+            <div v-else class="grid gap-4">
+                <div v-for="questionnaire in props.questionnaires.data" :key="questionnaire.id">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>{{ questionnaire.title }}</CardTitle>
+                            <CardDescription>{{ questionnaire.description }}</CardDescription>
+                        </CardHeader>
+                        <CardContent class="flex justify-between items-center">
+                            <div class="text-sm text-muted-foreground">
+                                {{ questionnaire.questions.length }} questions
+                            </div>
+                            <Button @click="startQuestionnaire(questionnaire)">
+                                Start Questionnaire
+                            </Button>
+                        </CardContent>
+                    </Card>
+                </div>
+
+                <div v-if="props.questionnaires.data.length === 0" class="text-center py-12 text-muted-foreground">
+                    <p>No questionnaires available</p>
+                </div>
             </div>
-        </div>
         </div>
     </AppLayout>
 </template>

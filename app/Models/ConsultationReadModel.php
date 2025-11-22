@@ -21,7 +21,7 @@ class ConsultationReadModel extends Model
         'patient_id',
         'doctor_id',
         'scheduled_at',
-        'duration',
+        'reason',
         'status',
         'notes',
         'completed_at',
