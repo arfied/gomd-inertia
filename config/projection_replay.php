@@ -47,6 +47,15 @@ return [
         'payout.requested' => App\Domain\Commission\Events\PayoutRequested::class,
         'payout.processed' => App\Domain\Commission\Events\PayoutProcessed::class,
         'referral_hierarchy.created' => App\Domain\Commission\Events\ReferralHierarchyCreated::class,
+        // Clinical domain events
+        'questionnaire.created' => App\Domain\Clinical\Events\QuestionnaireCreated::class,
+        'questionnaire.response_submitted' => App\Domain\Clinical\Events\ResponseSubmitted::class,
+        'clinical_note.recorded' => App\Domain\Clinical\Events\ClinicalNoteRecorded::class,
+        'consultation.scheduled' => App\Domain\Clinical\Events\ConsultationScheduled::class,
+        // Compliance domain events
+        'consent.granted' => App\Domain\Compliance\Events\ConsentGranted::class,
+        'audit_log.access_logged' => App\Domain\Compliance\Events\AccessLogged::class,
+        'license.verified' => App\Domain\Compliance\Events\LicenseVerified::class,
     ],
 
     'projections' => [
@@ -113,6 +122,37 @@ return [
         // Rebuilds the referral hierarchy projection
         'referral-hierarchy' => [
             'referral_hierarchy.created',
+        ],
+
+        // Rebuilds the questionnaire read model
+        'questionnaire' => [
+            'questionnaire.created',
+            'questionnaire.response_submitted',
+        ],
+
+        // Rebuilds the clinical note read model
+        'clinical-note' => [
+            'clinical_note.recorded',
+        ],
+
+        // Rebuilds the consultation read model
+        'consultation' => [
+            'consultation.scheduled',
+        ],
+
+        // Rebuilds the consent read model
+        'consent' => [
+            'consent.granted',
+        ],
+
+        // Rebuilds the audit trail read model
+        'audit-trail' => [
+            'audit_log.access_logged',
+        ],
+
+        // Rebuilds the license read model
+        'license' => [
+            'license.verified',
         ],
     ],
 ];
