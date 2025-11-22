@@ -12,6 +12,7 @@ use App\Domain\Signup\Events\QuestionnaireCompleted;
 use App\Domain\Signup\Events\SignupFailed;
 use App\Domain\Signup\Events\SignupStarted;
 use App\Domain\Signup\Events\SubscriptionCreated;
+use App\Models\StoredEvent;
 
 class SignupAggregate extends AggregateRoot
 {
@@ -26,16 +27,39 @@ class SignupAggregate extends AggregateRoot
     public ?string $paymentId = null;
     public ?string $subscriptionId = null;
 
-    public static function startSignup(string $signupId, string $userId, string $signupPath): self
+    public static function startSignup(string $signupId, array $payload, array $metadata = []): self
     {
         $aggregate = new self();
         $aggregate->signupId = $signupId;
-        $aggregate->userId = $userId;
-        $aggregate->signupPath = $signupPath;
+        $aggregate->userId = $payload['user_id'];
+        $aggregate->signupPath = $payload['signup_path'];
 
-        $aggregate->recordThat(new SignupStarted($signupId, $userId, $signupPath));
+        $aggregate->recordThat(new SignupStarted($signupId, $payload['user_id'], $payload['signup_path']));
 
         return $aggregate;
+    }
+
+    /**
+     * Reconstruct aggregate from event history in the event store.
+     */
+    public static function fromEventStream(string $signupId): self
+    {
+        $events = StoredEvent::where('aggregate_uuid', $signupId)
+            ->where('aggregate_type', self::aggregateType())
+            ->orderBy('id')
+            ->get()
+            ->map(fn ($stored) => $stored->toDomainEvent())
+            ->all();
+
+        return self::reconstituteFromHistory($events);
+    }
+
+    /**
+     * Get the aggregate type identifier.
+     */
+    public static function aggregateType(): string
+    {
+        return 'signup';
     }
 
     public function selectMedication(string $medicationId): void
@@ -63,15 +87,20 @@ class SignupAggregate extends AggregateRoot
         $this->recordThat(new PaymentProcessed($this->signupId, $paymentId, $amount, $status));
     }
 
-    public function createSubscription(string $subscriptionId): void
-    {
+    public function createSubscription(
+        string $subscriptionId,
+        string $userId,
+        string $planId,
+        ?string $medicationId = null,
+        ?string $conditionId = null,
+    ): void {
         $this->recordThat(new SubscriptionCreated(
             $this->signupId,
             $subscriptionId,
-            $this->userId,
-            $this->planId ?? '',
-            $this->medicationId,
-            $this->conditionId,
+            $userId,
+            $planId,
+            $medicationId,
+            $conditionId,
         ));
     }
 

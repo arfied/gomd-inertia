@@ -35,6 +35,22 @@ use App\Application\Compliance\Commands\VerifyProviderLicense;
 use App\Application\Compliance\Handlers\GrantConsentHandler;
 use App\Application\Compliance\Handlers\LogDataAccessHandler;
 use App\Application\Compliance\Handlers\VerifyProviderLicenseHandler;
+use App\Application\Signup\Commands\StartSignup;
+use App\Application\Signup\Commands\SelectMedication;
+use App\Application\Signup\Commands\SelectCondition;
+use App\Application\Signup\Commands\SelectPlan;
+use App\Application\Signup\Commands\CompleteQuestionnaire;
+use App\Application\Signup\Commands\ProcessPayment;
+use App\Application\Signup\Commands\CreateSubscription;
+use App\Application\Signup\Commands\FailSignup;
+use App\Application\Signup\Handlers\StartSignupHandler;
+use App\Application\Signup\Handlers\SelectMedicationHandler;
+use App\Application\Signup\Handlers\SelectConditionHandler;
+use App\Application\Signup\Handlers\SelectPlanHandler;
+use App\Application\Signup\Handlers\CompleteQuestionnaireHandler;
+use App\Application\Signup\Handlers\ProcessPaymentHandler;
+use App\Application\Signup\Handlers\CreateSubscriptionHandler;
+use App\Application\Signup\Handlers\FailSignupHandler;
 use App\Application\MedicationCatalog\Handlers\AddMedicationToFormularyHandler;
 use App\Application\MedicationCatalog\Handlers\CreateConditionHandler;
 use App\Application\MedicationCatalog\Handlers\CreateFormularyHandler;
@@ -440,6 +456,47 @@ class AppServiceProvider extends ServiceProvider
             $bus->register(
                 VerifyProviderLicense::class,
                 $app->make(VerifyProviderLicenseHandler::class)
+            );
+
+            // Signup command handlers
+            $bus->register(
+                StartSignup::class,
+                $app->make(StartSignupHandler::class)
+            );
+
+            $bus->register(
+                SelectMedication::class,
+                $app->make(SelectMedicationHandler::class)
+            );
+
+            $bus->register(
+                SelectCondition::class,
+                $app->make(SelectConditionHandler::class)
+            );
+
+            $bus->register(
+                SelectPlan::class,
+                $app->make(SelectPlanHandler::class)
+            );
+
+            $bus->register(
+                CompleteQuestionnaire::class,
+                $app->make(CompleteQuestionnaireHandler::class)
+            );
+
+            $bus->register(
+                ProcessPayment::class,
+                $app->make(ProcessPaymentHandler::class)
+            );
+
+            $bus->register(
+                CreateSubscription::class,
+                $app->make(CreateSubscriptionHandler::class)
+            );
+
+            $bus->register(
+                FailSignup::class,
+                $app->make(FailSignupHandler::class)
             );
         });
 

@@ -1926,9 +1926,12 @@ const customPreset = {
   - [x] Database migration for `signup_read_model` table (15 columns, 8 indexes)
   - [x] 8 Event listeners (ProjectSignupStarted, ProjectMedicationSelected, ProjectConditionSelected, ProjectPlanSelected, ProjectQuestionnaireCompleted, ProjectPaymentProcessed, ProjectSubscriptionCreated, ProjectSignupFailed)
   - [x] Config updates: event type mappings and projection definition
-- [ ] **Phase 3: Event Handlers** - Update read models from domain events
-- [ ] **Phase 4: Commands & Handlers** - Commands for each signup step
-- [ ] **Phase 5: Controllers & Routes** - Signup endpoints for each step
+- [x] **Phase 3: Commands & Handlers** - Commands and handlers for each signup step
+  - [x] 8 Command classes (StartSignup, SelectMedication, SelectCondition, SelectPlan, CompleteQuestionnaire, ProcessPayment, CreateSubscription, FailSignup)
+  - [x] 8 Command handlers with event sourcing integration
+  - [x] SignupAggregate enhancements (fromEventStream, aggregateType)
+  - [x] AppServiceProvider registration for all handlers
+- [ ] **Phase 4: Controllers & Routes** - Signup endpoints for each step
 - [ ] **Phase 6: Frontend Components** - Multi-step Vue component with progress indicator
 - [ ] **Phase 7: Testing** - Comprehensive tests for all 3 signup paths (37+ tests)
 - [ ] **Phase 8: Integration & Polish** - Payment integration, error handling, UX enhancements
