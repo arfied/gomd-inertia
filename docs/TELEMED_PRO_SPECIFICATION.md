@@ -1909,6 +1909,26 @@ const customPreset = {
 - [x] Consent, audit log, and license aggregates (`ConsentGranted`, `AccessLogged`, `LicenseVerified`).
 - [x] Compliance automation (audit trail UI, HIPAA checks, regulatory reporting).
 
+### 7. Signup Flow (Multi-Step)
+
+- [x] **Phase 1: Domain Model & Events** - SignupAggregate and 8 domain events
+  - [x] `SignupAggregate` with state management for all signup paths
+  - [x] `SignupStarted` event (tracks signup path: medication_first, condition_first, plan_first)
+  - [x] `MedicationSelected` event
+  - [x] `ConditionSelected` event
+  - [x] `PlanSelected` event
+  - [x] `QuestionnaireCompleted` event (stores responses as JSON)
+  - [x] `PaymentProcessed` event (tracks payment status)
+  - [x] `SubscriptionCreated` event (final success state)
+  - [x] `SignupFailed` event (tracks failure reason and message)
+- [ ] **Phase 2: Read Models & Migrations** - SignupReadModel and database schema
+- [ ] **Phase 3: Event Handlers** - Update read models from domain events
+- [ ] **Phase 4: Commands & Handlers** - Commands for each signup step
+- [ ] **Phase 5: Controllers & Routes** - Signup endpoints for each step
+- [ ] **Phase 6: Frontend Components** - Multi-step Vue component with progress indicator
+- [ ] **Phase 7: Testing** - Comprehensive tests for all 3 signup paths (37+ tests)
+- [ ] **Phase 8: Integration & Polish** - Payment integration, error handling, UX enhancements
+
 ### 7. Real-Time, Omnichannel & Analytics
 
 - [ ] Laravel Reverb WebSocket + SSE fallback for live dashboards and patient views.
