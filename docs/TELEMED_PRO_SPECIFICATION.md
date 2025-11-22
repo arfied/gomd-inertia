@@ -1904,10 +1904,10 @@ const customPreset = {
 
 ### 6. Clinical & Compliance
 
-- [ ] Questionnaire, clinical note, and consultation aggregates and events.
-- [ ] Adaptive questionnaire engine and read models.
-- [ ] Consent, audit log, and license aggregates (`ConsentGranted`, `AccessLogged`, `LicenseVerified`).
-- [ ] Compliance automation (audit trail UI, HIPAA checks, regulatory reporting).
+- [x] Questionnaire, clinical note, and consultation aggregates and events.
+- [x] Adaptive questionnaire engine and read models.
+- [x] Consent, audit log, and license aggregates (`ConsentGranted`, `AccessLogged`, `LicenseVerified`).
+- [x] Compliance automation (audit trail UI, HIPAA checks, regulatory reporting).
 
 ### 7. Real-Time, Omnichannel & Analytics
 

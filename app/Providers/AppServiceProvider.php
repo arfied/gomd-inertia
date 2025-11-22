@@ -21,6 +21,20 @@ use App\Application\MedicationCatalog\Commands\RemoveMedicationFromFormulary;
 use App\Application\MedicationCatalog\Commands\UpdateCondition;
 use App\Application\MedicationCatalog\Commands\UpdateFormulary;
 use App\Application\MedicationCatalog\Commands\UpdateMedication;
+use App\Application\Clinical\Commands\CreateQuestionnaire;
+use App\Application\Clinical\Commands\SubmitQuestionnaireResponse;
+use App\Application\Clinical\Commands\RecordClinicalNote;
+use App\Application\Clinical\Commands\ScheduleConsultation;
+use App\Application\Clinical\Handlers\CreateQuestionnaireHandler;
+use App\Application\Clinical\Handlers\SubmitQuestionnaireResponseHandler;
+use App\Application\Clinical\Handlers\RecordClinicalNoteHandler;
+use App\Application\Clinical\Handlers\ScheduleConsultationHandler;
+use App\Application\Compliance\Commands\GrantConsent;
+use App\Application\Compliance\Commands\LogDataAccess;
+use App\Application\Compliance\Commands\VerifyProviderLicense;
+use App\Application\Compliance\Handlers\GrantConsentHandler;
+use App\Application\Compliance\Handlers\LogDataAccessHandler;
+use App\Application\Compliance\Handlers\VerifyProviderLicenseHandler;
 use App\Application\MedicationCatalog\Handlers\AddMedicationToFormularyHandler;
 use App\Application\MedicationCatalog\Handlers\CreateConditionHandler;
 use App\Application\MedicationCatalog\Handlers\CreateFormularyHandler;
@@ -389,6 +403,43 @@ class AppServiceProvider extends ServiceProvider
             $bus->register(
                 RemoveMedicationFromFormulary::class,
                 $app->make(RemoveMedicationFromFormularyHandler::class)
+            );
+
+            // Clinical command handlers
+            $bus->register(
+                CreateQuestionnaire::class,
+                $app->make(CreateQuestionnaireHandler::class)
+            );
+
+            $bus->register(
+                SubmitQuestionnaireResponse::class,
+                $app->make(SubmitQuestionnaireResponseHandler::class)
+            );
+
+            $bus->register(
+                RecordClinicalNote::class,
+                $app->make(RecordClinicalNoteHandler::class)
+            );
+
+            $bus->register(
+                ScheduleConsultation::class,
+                $app->make(ScheduleConsultationHandler::class)
+            );
+
+            // Compliance command handlers
+            $bus->register(
+                GrantConsent::class,
+                $app->make(GrantConsentHandler::class)
+            );
+
+            $bus->register(
+                LogDataAccess::class,
+                $app->make(LogDataAccessHandler::class)
+            );
+
+            $bus->register(
+                VerifyProviderLicense::class,
+                $app->make(VerifyProviderLicenseHandler::class)
             );
         });
 
