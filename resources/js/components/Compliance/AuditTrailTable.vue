@@ -25,7 +25,7 @@ interface Props {
     total?: number
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
     loading: false,
     total: 0,
 })

@@ -22,7 +22,7 @@ interface Props {
     loading?: boolean
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
     loading: false,
 })
 

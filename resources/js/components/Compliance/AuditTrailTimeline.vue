@@ -20,7 +20,7 @@ interface Props {
     records: AuditRecord[]
 }
 
-defineProps<Props>()
+const props = defineProps<Props>()
 
 const emit = defineEmits<{
     'view-details': [record: AuditRecord]
