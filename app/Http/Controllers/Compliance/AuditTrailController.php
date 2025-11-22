@@ -4,12 +4,13 @@ namespace App\Http\Controllers\Compliance;
 
 use App\Http\Controllers\Controller;
 use App\Models\AuditTrailReadModel;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class AuditTrailController extends Controller
 {
-    public function index(Request $request): JsonResponse
+    public function index(Request $request): Response
     {
         $patientId = $request->query('patient_id');
         $accessedBy = $request->query('accessed_by');
@@ -39,21 +40,26 @@ class AuditTrailController extends Controller
 
         $auditTrail = $query->orderBy('accessed_at', 'desc')->paginate($perPage, ['*'], 'page', $page);
 
-        return response()->json($auditTrail);
+        return Inertia::render('compliance/AuditTrail', [
+            'auditTrail' => $auditTrail,
+        ]);
     }
 
-    public function show(string $uuid): JsonResponse
+    public function show(string $uuid): Response
     {
         $audit = AuditTrailReadModel::where('audit_uuid', $uuid)->first();
 
         if (! $audit) {
-            return response()->json(['message' => 'Audit record not found'], 404);
+            abort(404, 'Audit record not found');
         }
 
-        return response()->json($audit);
+        return Inertia::render('compliance/AuditTrail', [
+            'auditTrail' => [$audit],
+            'selectedAudit' => $audit,
+        ]);
     }
 
-    public function export(Request $request): JsonResponse
+    public function export(Request $request)
     {
         $patientId = $request->query('patient_id');
         $startDate = $request->query('start_date');

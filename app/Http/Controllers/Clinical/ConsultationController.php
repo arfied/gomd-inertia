@@ -6,13 +6,14 @@ use App\Application\Clinical\Commands\ScheduleConsultation;
 use App\Application\Commands\CommandBus;
 use App\Http\Controllers\Controller;
 use App\Models\ConsultationReadModel;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class ConsultationController extends Controller
 {
-    public function index(Request $request): JsonResponse
+    public function index(Request $request): Response
     {
         $patientId = $request->query('patient_id');
         $doctorId = $request->query('doctor_id');
@@ -36,10 +37,12 @@ class ConsultationController extends Controller
 
         $consultations = $query->orderBy('scheduled_at', 'desc')->paginate($perPage, ['*'], 'page', $page);
 
-        return response()->json($consultations);
+        return Inertia::render('clinical/Consultations', [
+            'consultations' => $consultations,
+        ]);
     }
 
-    public function store(Request $request, CommandBus $commandBus): JsonResponse
+    public function store(Request $request, CommandBus $commandBus)
     {
         $data = $request->validate([
             'patient_id' => 'required|string',
@@ -58,26 +61,27 @@ class ConsultationController extends Controller
             scheduledAt: $data['scheduled_at'],
             reason: $data['reason'] ?? null,
             notes: $data['notes'] ?? null,
-            metadata: ['source' => 'api', 'actor_user_id' => $request->user()?->id],
+            metadata: ['source' => 'web', 'actor_user_id' => $request->user()?->id],
         );
 
         $commandBus->dispatch($command);
 
-        return response()->json([
-            'consultation_uuid' => $consultationUuid,
-            'message' => 'Consultation scheduled successfully',
-        ], 201);
+        return redirect()->route('clinical.consultations.index')
+            ->with('success', 'Consultation scheduled successfully');
     }
 
-    public function show(string $uuid): JsonResponse
+    public function show(string $uuid): Response
     {
         $consultation = ConsultationReadModel::where('consultation_uuid', $uuid)->first();
 
         if (! $consultation) {
-            return response()->json(['message' => 'Consultation not found'], 404);
+            abort(404, 'Consultation not found');
         }
 
-        return response()->json($consultation);
+        return Inertia::render('clinical/Consultations', [
+            'consultations' => [$consultation],
+            'selectedConsultation' => $consultation,
+        ]);
     }
 }
 

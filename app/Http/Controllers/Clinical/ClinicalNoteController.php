@@ -6,13 +6,14 @@ use App\Application\Clinical\Commands\RecordClinicalNote;
 use App\Application\Commands\CommandBus;
 use App\Http\Controllers\Controller;
 use App\Models\ClinicalNoteReadModel;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class ClinicalNoteController extends Controller
 {
-    public function index(Request $request): JsonResponse
+    public function index(Request $request): Response
     {
         $patientId = $request->query('patient_id');
         $doctorId = $request->query('doctor_id');
@@ -36,10 +37,12 @@ class ClinicalNoteController extends Controller
 
         $notes = $query->orderBy('recorded_at', 'desc')->paginate($perPage, ['*'], 'page', $page);
 
-        return response()->json($notes);
+        return Inertia::render('clinical/ClinicalNotes', [
+            'notes' => $notes,
+        ]);
     }
 
-    public function store(Request $request, CommandBus $commandBus): JsonResponse
+    public function store(Request $request, CommandBus $commandBus)
     {
         $data = $request->validate([
             'patient_id' => 'required|string',
@@ -58,26 +61,27 @@ class ClinicalNoteController extends Controller
             content: $data['content'],
             attachments: $data['attachments'] ?? [],
             recordedAt: now(),
-            metadata: ['source' => 'api', 'actor_user_id' => $request->user()?->id],
+            metadata: ['source' => 'web', 'actor_user_id' => $request->user()?->id],
         );
 
         $commandBus->dispatch($command);
 
-        return response()->json([
-            'clinical_note_uuid' => $noteUuid,
-            'message' => 'Clinical note recorded successfully',
-        ], 201);
+        return redirect()->route('clinical.notes.index')
+            ->with('success', 'Clinical note recorded successfully');
     }
 
-    public function show(string $uuid): JsonResponse
+    public function show(string $uuid): Response
     {
         $note = ClinicalNoteReadModel::where('clinical_note_uuid', $uuid)->first();
 
         if (! $note) {
-            return response()->json(['message' => 'Clinical note not found'], 404);
+            abort(404, 'Clinical note not found');
         }
 
-        return response()->json($note);
+        return Inertia::render('clinical/ClinicalNotes', [
+            'notes' => [$note],
+            'selectedNote' => $note,
+        ]);
     }
 }
 

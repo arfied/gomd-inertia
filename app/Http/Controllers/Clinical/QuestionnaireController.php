@@ -10,10 +10,12 @@ use App\Models\QuestionnaireReadModel;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class QuestionnaireController extends Controller
 {
-    public function index(Request $request): JsonResponse
+    public function index(Request $request): Response
     {
         $patientId = $request->query('patient_id');
         $status = $request->query('status', 'active');
@@ -32,10 +34,12 @@ class QuestionnaireController extends Controller
 
         $questionnaires = $query->paginate($perPage, ['*'], 'page', $page);
 
-        return response()->json($questionnaires);
+        return Inertia::render('clinical/Questionnaires', [
+            'questionnaires' => $questionnaires,
+        ]);
     }
 
-    public function store(Request $request, CommandBus $commandBus): JsonResponse
+    public function store(Request $request, CommandBus $commandBus)
     {
         $data = $request->validate([
             'title' => 'required|string|max:255',
@@ -53,29 +57,30 @@ class QuestionnaireController extends Controller
             questions: $data['questions'] ?? [],
             createdBy: $request->user()?->id,
             patientId: $data['patient_id'] ?? null,
-            metadata: ['source' => 'api', 'actor_user_id' => $request->user()?->id],
+            metadata: ['source' => 'web', 'actor_user_id' => $request->user()?->id],
         );
 
         $commandBus->dispatch($command);
 
-        return response()->json([
-            'questionnaire_uuid' => $questionnaireUuid,
-            'message' => 'Questionnaire created successfully',
-        ], 201);
+        return redirect()->route('clinical.questionnaires.index')
+            ->with('success', 'Questionnaire created successfully');
     }
 
-    public function show(string $uuid): JsonResponse
+    public function show(string $uuid): Response
     {
         $questionnaire = QuestionnaireReadModel::where('questionnaire_uuid', $uuid)->first();
 
         if (! $questionnaire) {
-            return response()->json(['message' => 'Questionnaire not found'], 404);
+            abort(404, 'Questionnaire not found');
         }
 
-        return response()->json($questionnaire);
+        return Inertia::render('clinical/Questionnaires', [
+            'questionnaires' => [$questionnaire],
+            'selectedQuestionnaire' => $questionnaire,
+        ]);
     }
 
-    public function submitResponse(string $uuid, Request $request, CommandBus $commandBus): JsonResponse
+    public function submitResponse(string $uuid, Request $request, CommandBus $commandBus)
     {
         $data = $request->validate([
             'responses' => 'required|array',
@@ -84,22 +89,20 @@ class QuestionnaireController extends Controller
         $questionnaire = QuestionnaireReadModel::where('questionnaire_uuid', $uuid)->first();
 
         if (! $questionnaire) {
-            return response()->json(['message' => 'Questionnaire not found'], 404);
+            abort(404, 'Questionnaire not found');
         }
 
         $command = new SubmitQuestionnaireResponse(
             questionnaireId: $uuid,
             responses: $data['responses'],
             submittedAt: now(),
-            metadata: ['source' => 'api', 'actor_user_id' => $request->user()?->id],
+            metadata: ['source' => 'web', 'actor_user_id' => $request->user()?->id],
         );
 
         $commandBus->dispatch($command);
 
-        return response()->json([
-            'message' => 'Response submitted successfully',
-            'questionnaire_uuid' => $uuid,
-        ], 200);
+        return redirect()->route('clinical.questionnaires.index')
+            ->with('success', 'Response submitted successfully');
     }
 }
 

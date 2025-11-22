@@ -6,13 +6,14 @@ use App\Application\Compliance\Commands\VerifyProviderLicense;
 use App\Application\Commands\CommandBus;
 use App\Http\Controllers\Controller;
 use App\Models\LicenseReadModel;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class LicenseController extends Controller
 {
-    public function index(Request $request): JsonResponse
+    public function index(Request $request): Response
     {
         $providerId = $request->query('provider_id');
         $licenseType = $request->query('license_type');
@@ -36,10 +37,12 @@ class LicenseController extends Controller
 
         $licenses = $query->paginate($perPage, ['*'], 'page', $page);
 
-        return response()->json($licenses);
+        return Inertia::render('compliance/Dashboard', [
+            'licenses' => $licenses,
+        ]);
     }
 
-    public function store(Request $request, CommandBus $commandBus): JsonResponse
+    public function store(Request $request, CommandBus $commandBus)
     {
         $data = $request->validate([
             'provider_id' => 'required|integer',
@@ -61,26 +64,27 @@ class LicenseController extends Controller
             expiresAt: $data['expires_at'] ?? null,
             issuingBody: $data['issuing_body'] ?? null,
             verificationUrl: $data['verification_url'] ?? null,
-            metadata: ['source' => 'api', 'actor_user_id' => $request->user()?->id],
+            metadata: ['source' => 'web', 'actor_user_id' => $request->user()?->id],
         );
 
         $commandBus->dispatch($command);
 
-        return response()->json([
-            'license_uuid' => $licenseUuid,
-            'message' => 'License verified successfully',
-        ], 201);
+        return redirect()->route('compliance.dashboard')
+            ->with('success', 'License verified successfully');
     }
 
-    public function show(string $uuid): JsonResponse
+    public function show(string $uuid): Response
     {
         $license = LicenseReadModel::where('license_uuid', $uuid)->first();
 
         if (! $license) {
-            return response()->json(['message' => 'License not found'], 404);
+            abort(404, 'License not found');
         }
 
-        return response()->json($license);
+        return Inertia::render('compliance/Dashboard', [
+            'licenses' => [$license],
+            'selectedLicense' => $license,
+        ]);
     }
 }
 

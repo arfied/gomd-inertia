@@ -218,6 +218,43 @@ Route::middleware('auth')->group(function () {
             ->name('api.payment-methods.set-default');
     });
 
+
+
+    // Clinical routes
+    Route::prefix('clinical')->name('clinical.')->group(function () {
+        Route::get('questionnaires', [App\Http\Controllers\Clinical\QuestionnaireController::class, 'index'])->name('questionnaires.index');
+        Route::post('questionnaires', [App\Http\Controllers\Clinical\QuestionnaireController::class, 'store'])->name('questionnaires.store');
+        Route::get('questionnaires/{uuid}', [App\Http\Controllers\Clinical\QuestionnaireController::class, 'show'])->name('questionnaires.show');
+        Route::post('questionnaires/{uuid}/responses', [App\Http\Controllers\Clinical\QuestionnaireController::class, 'submitResponse'])->name('questionnaires.submit-response');
+
+        Route::get('notes', [App\Http\Controllers\Clinical\ClinicalNoteController::class, 'index'])->name('notes.index');
+        Route::post('notes', [App\Http\Controllers\Clinical\ClinicalNoteController::class, 'store'])->name('notes.store');
+        Route::get('notes/{uuid}', [App\Http\Controllers\Clinical\ClinicalNoteController::class, 'show'])->name('notes.show');
+
+        Route::get('consultations', [App\Http\Controllers\Clinical\ConsultationController::class, 'index'])->name('consultations.index');
+        Route::post('consultations', [App\Http\Controllers\Clinical\ConsultationController::class, 'store'])->name('consultations.store');
+        Route::get('consultations/{uuid}', [App\Http\Controllers\Clinical\ConsultationController::class, 'show'])->name('consultations.show');
+    });
+
+    // Compliance routes
+    Route::prefix('compliance')->name('compliance.')->group(function () {
+        Route::get('audit-trail', [App\Http\Controllers\Compliance\AuditTrailController::class, 'index'])->name('audit-trail.index');
+        Route::get('audit-trail/export', [App\Http\Controllers\Compliance\AuditTrailController::class, 'export'])->name('audit-trail.export');
+        Route::get('audit-trail/{uuid}', [App\Http\Controllers\Compliance\AuditTrailController::class, 'show'])->name('audit-trail.show');
+
+        Route::get('dashboard', [App\Http\Controllers\Compliance\DashboardController::class, 'index'])->name('dashboard');
+
+        Route::get('consents', [App\Http\Controllers\Compliance\ConsentController::class, 'index'])->name('consents.index');
+        Route::post('consents', [App\Http\Controllers\Compliance\ConsentController::class, 'store'])->name('consents.store');
+        Route::get('consents/{uuid}', [App\Http\Controllers\Compliance\ConsentController::class, 'show'])->name('consents.show');
+
+        Route::get('licenses', [App\Http\Controllers\Compliance\LicenseController::class, 'index'])->name('licenses.index');
+        Route::post('licenses', [App\Http\Controllers\Compliance\LicenseController::class, 'store'])->name('licenses.store');
+        Route::get('licenses/{uuid}', [App\Http\Controllers\Compliance\LicenseController::class, 'show'])->name('licenses.show');
+    });
+
+
+
     // Admin routes
     Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('subscription-configuration', [SubscriptionConfigurationController::class, 'show'])

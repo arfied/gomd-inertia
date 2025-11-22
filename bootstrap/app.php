@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\Authenticate;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\CheckProfileCompletion;
 use App\Http\Middleware\HandleInertiaRequests;
@@ -27,6 +28,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->alias([
+            'auth' => Authenticate::class,
             'rate.limit.subscription.renewal' => RateLimitSubscriptionRenewal::class,
         ]);
     })

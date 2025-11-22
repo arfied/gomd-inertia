@@ -6,13 +6,14 @@ use App\Application\Compliance\Commands\GrantConsent;
 use App\Application\Commands\CommandBus;
 use App\Http\Controllers\Controller;
 use App\Models\ConsentReadModel;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class ConsentController extends Controller
 {
-    public function index(Request $request): JsonResponse
+    public function index(Request $request): Response
     {
         $patientId = $request->query('patient_id');
         $consentType = $request->query('consent_type');
@@ -36,10 +37,12 @@ class ConsentController extends Controller
 
         $consents = $query->paginate($perPage, ['*'], 'page', $page);
 
-        return response()->json($consents);
+        return Inertia::render('compliance/Dashboard', [
+            'consents' => $consents,
+        ]);
     }
 
-    public function store(Request $request, CommandBus $commandBus): JsonResponse
+    public function store(Request $request, CommandBus $commandBus)
     {
         $data = $request->validate([
             'patient_id' => 'required|string',
@@ -58,26 +61,27 @@ class ConsentController extends Controller
             grantedAt: now(),
             expiresAt: $data['expires_at'] ?? null,
             termsVersion: $data['terms_version'] ?? null,
-            metadata: ['source' => 'api', 'actor_user_id' => $request->user()?->id],
+            metadata: ['source' => 'web', 'actor_user_id' => $request->user()?->id],
         );
 
         $commandBus->dispatch($command);
 
-        return response()->json([
-            'consent_uuid' => $consentUuid,
-            'message' => 'Consent granted successfully',
-        ], 201);
+        return redirect()->route('compliance.dashboard')
+            ->with('success', 'Consent granted successfully');
     }
 
-    public function show(string $uuid): JsonResponse
+    public function show(string $uuid): Response
     {
         $consent = ConsentReadModel::where('consent_uuid', $uuid)->first();
 
         if (! $consent) {
-            return response()->json(['message' => 'Consent not found'], 404);
+            abort(404, 'Consent not found');
         }
 
-        return response()->json($consent);
+        return Inertia::render('compliance/Dashboard', [
+            'consents' => [$consent],
+            'selectedConsent' => $consent,
+        ]);
     }
 }
 
