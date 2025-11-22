@@ -56,6 +56,15 @@ return [
         'consent.granted' => App\Domain\Compliance\Events\ConsentGranted::class,
         'audit_log.access_logged' => App\Domain\Compliance\Events\AccessLogged::class,
         'license.verified' => App\Domain\Compliance\Events\LicenseVerified::class,
+        // Signup domain events
+        'signup.started' => App\Domain\Signup\Events\SignupStarted::class,
+        'signup.medication_selected' => App\Domain\Signup\Events\MedicationSelected::class,
+        'signup.condition_selected' => App\Domain\Signup\Events\ConditionSelected::class,
+        'signup.plan_selected' => App\Domain\Signup\Events\PlanSelected::class,
+        'signup.questionnaire_completed' => App\Domain\Signup\Events\QuestionnaireCompleted::class,
+        'signup.payment_processed' => App\Domain\Signup\Events\PaymentProcessed::class,
+        'signup.subscription_created' => App\Domain\Signup\Events\SubscriptionCreated::class,
+        'signup.failed' => App\Domain\Signup\Events\SignupFailed::class,
     ],
 
     'projections' => [
@@ -153,6 +162,18 @@ return [
         // Rebuilds the license read model
         'license' => [
             'license.verified',
+        ],
+
+        // Rebuilds the signup read model
+        'signup' => [
+            'signup.started',
+            'signup.medication_selected',
+            'signup.condition_selected',
+            'signup.plan_selected',
+            'signup.questionnaire_completed',
+            'signup.payment_processed',
+            'signup.subscription_created',
+            'signup.failed',
         ],
     ],
 ];

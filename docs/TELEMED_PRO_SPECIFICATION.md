@@ -1921,7 +1921,11 @@ const customPreset = {
   - [x] `PaymentProcessed` event (tracks payment status)
   - [x] `SubscriptionCreated` event (final success state)
   - [x] `SignupFailed` event (tracks failure reason and message)
-- [ ] **Phase 2: Read Models & Migrations** - SignupReadModel and database schema
+- [x] **Phase 2: Read Models & Migrations** - SignupReadModel and database schema
+  - [x] `SignupReadModel` Eloquent model with query scopes
+  - [x] Database migration for `signup_read_model` table (15 columns, 8 indexes)
+  - [x] 8 Event listeners (ProjectSignupStarted, ProjectMedicationSelected, ProjectConditionSelected, ProjectPlanSelected, ProjectQuestionnaireCompleted, ProjectPaymentProcessed, ProjectSubscriptionCreated, ProjectSignupFailed)
+  - [x] Config updates: event type mappings and projection definition
 - [ ] **Phase 3: Event Handlers** - Update read models from domain events
 - [ ] **Phase 4: Commands & Handlers** - Commands for each signup step
 - [ ] **Phase 5: Controllers & Routes** - Signup endpoints for each step
