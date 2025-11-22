@@ -23,6 +23,7 @@ use App\Http\Controllers\ReferralNetworkController;
 use App\Http\Controllers\SubscriptionAnalyticsDashboardController;
 use App\Http\Controllers\PaymentMethodController;
 use App\Http\Controllers\Admin\SubscriptionConfigurationController;
+use App\Http\Controllers\Admin\FailedRenewalsController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
@@ -193,7 +194,7 @@ Route::middleware('auth')->group(function () {
 
     // Billing Page
     Route::get('billing', function () {
-        return Inertia::render('Billing/BillingPage');
+        return Inertia::render('billing/BillingPage');
     })->name('billing.index');
 
     // Payment Methods API Routes
@@ -230,6 +231,13 @@ Route::middleware('auth')->group(function () {
 
         Route::post('subscription-configuration/rate-limits', [SubscriptionConfigurationController::class, 'updateRateLimitConfiguration'])
             ->name('subscription-configuration.update-rate-limits');
+
+        // Failed renewals routes
+        Route::get('failed-renewals', [FailedRenewalsController::class, 'index'])
+            ->name('failed-renewals.index');
+
+        Route::get('failed-renewals/{sagaUuid}', [FailedRenewalsController::class, 'show'])
+            ->name('failed-renewals.show');
     });
 });
 

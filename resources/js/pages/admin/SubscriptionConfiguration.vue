@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { AlertCircle, CheckCircle2, Loader2, Plus, Trash2 } from 'lucide-vue-next'
+import FailedRenewalsWidget from '@/components/Admin/FailedRenewalsWidget.vue'
 
 interface Configuration {
     renewal: {
@@ -317,6 +318,9 @@ const saveRateLimitConfiguration = async () => {
                         <pre class="bg-gray-100 p-4 rounded text-sm overflow-auto">{{ JSON.stringify(configuration, null, 2) }}</pre>
                     </CardContent>
                 </Card>
+
+                <!-- Failed Renewals Widget -->
+                <FailedRenewalsWidget />
             </div>
         </div>
     </AppLayout>

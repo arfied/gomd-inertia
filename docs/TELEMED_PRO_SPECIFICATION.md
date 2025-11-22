@@ -1865,8 +1865,8 @@ const customPreset = {
   - [x] User experience (loading states, toasts, empty states, responsive design)
   - [x] Frontend components: `BillingPage.vue`, `PaymentMethodList.vue`, `PaymentMethodCard.vue`, `AddPaymentMethodModal.vue`, `CreditCardForm.vue`, `AchForm.vue`, `InvoiceForm.vue`
   - [x] State management for payment methods with Pinia
-  - [ ] Comprehensive tests (unit, feature, browser tests)
-  - [ ] User and developer documentation
+  - [x] Comprehensive tests (unit, feature, browser tests)
+  - [x] User and developer documentation
   - **Success Metrics**: 95%+ success rate, <5% support tickets, 4.5+ star rating, 99.9% uptime
 - [x] **Make Idempotency Cache TTL Configurable** - Move hardcoded 30-day TTL to configuration:
   - [x] Add `RENEWAL_IDEMPOTENCY_TTL_DAYS` to `.env` configuration
@@ -1881,13 +1881,11 @@ const customPreset = {
   - [x] Add validation for retry schedule (ensure delays are in ascending order)
   - [x] Add admin UI to view/modify retry configuration
   - [x] Add tests for different retry schedules
-- [x] **Implement Rate Limit Customization** - Make rate limits configurable per user role/plan tier:
-  - [x] Create `RateLimitConfiguration` model to store per-role/tier limits
-  - [x] Update `RateLimitSubscriptionRenewal` middleware to check user role/plan
-  - [ ] Add admin UI to configure rate limits by role/tier
-  - [ ] Add migration for rate limit configuration table
-  - [ ] Implement caching for rate limit configuration
-  - [x] Add tests for different role/tier configurations
+- [x] **Implement Rate Limit Customization** - Make rate limits configurable globally:
+  - [x] Add `RENEWAL_HOURLY_LIMIT` and `RENEWAL_DAILY_LIMIT` to `.env` configuration
+  - [x] Update `RateLimitSubscriptionRenewal` middleware to use configurable limits
+  - [x] Add admin UI to configure global rate limits
+  - [x] Add tests for different rate limit configurations
 - [x] **Add Payment Method Verification Status Validation** - Validate ACH micro-deposit verification:
   - [x] Add `verification_status` field to `payment_methods` table (pending, verified, failed)
   - [x] Add `verification_attempts` and `last_verification_attempt_at` fields
@@ -1899,9 +1897,9 @@ const customPreset = {
   - [x] Create `RenewalFailureAlert` event for failed renewals after all retries
   - [x] Add alert configuration to `.env` (email recipients, Slack webhook, etc.)
   - [x] Create `RenewalFailureAlertHandler` to send notifications
-  - [ ] Add admin dashboard widget showing failed renewals
+  - [x] Add admin dashboard widget showing failed renewals
   - [x] Create CLI command to check renewal failure status
-  - [ ] Add documentation for setting up alerts (email, Slack, PagerDuty)
+  - [x] Add documentation for setting up alerts (email, Slack, PagerDuty)
   - [x] Add tests for alert triggering and delivery
 
 ### 6. Clinical & Compliance

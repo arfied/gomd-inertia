@@ -14,7 +14,7 @@ interface Emits {
 }
 
 defineProps<Props>()
-defineEmits<Emits>()
+const emit = defineEmits<Emits>()
 
 const form = ref({
     cc_last_four: '',
@@ -58,8 +58,6 @@ const handleSubmit = () => {
         emit('submit', form.value)
     }
 }
-
-const emit = defineEmits<Emits>()
 </script>
 
 <template>
