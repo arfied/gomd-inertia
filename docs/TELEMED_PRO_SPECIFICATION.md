@@ -1931,12 +1931,16 @@ const customPreset = {
   - [x] 8 Command handlers with event sourcing integration
   - [x] SignupAggregate enhancements (fromEventStream, aggregateType)
   - [x] AppServiceProvider registration for all handlers
-- [ ] **Phase 4: Controllers & Routes** - Signup endpoints for each step
-- [ ] **Phase 6: Frontend Components** - Multi-step Vue component with progress indicator
-- [ ] **Phase 7: Testing** - Comprehensive tests for all 3 signup paths (37+ tests)
-- [ ] **Phase 8: Integration & Polish** - Payment integration, error handling, UX enhancements
+- [x] **Phase 4: Controllers & Routes** - Signup endpoints for each step
+  - [x] SignupController with 9 endpoints
+  - [x] Route registration in routes/web.php
+  - [x] Request validation for all endpoints
+  - [x] JSON response formatting
+- [ ] **Phase 5: Frontend Components** - Multi-step Vue component with progress indicator
+- [ ] **Phase 6: Testing** - Comprehensive tests for all 3 signup paths (37+ tests)
+- [ ] **Phase 7: Integration & Polish** - Payment integration, error handling, UX enhancements
 
-### 7. Real-Time, Omnichannel & Analytics
+### 8. Real-Time, Omnichannel & Analytics
 
 - [ ] Laravel Reverb WebSocket + SSE fallback for live dashboards and patient views.
 - [ ] Presence, collaborative notes, and real-time chat in patient context.
@@ -1944,7 +1948,7 @@ const customPreset = {
 - [ ] Notification dispatcher for event-driven alerts and reminders.
 - [ ] Analytics engine: real-time dashboards, event-based metrics, predictive models.
 
-### 8. Testing, Documentation & Launch
+### 9. Testing, Documentation & Launch
 
 - [x] Unit and feature tests for patient enrollment, dashboard read models, and subscription status.
 - [ ] Unit and integration tests for all new aggregates, sagas, and read models.

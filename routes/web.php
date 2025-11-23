@@ -42,6 +42,19 @@ Route::get('dashboard', function () {
     return Inertia::render('Dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
+// Signup routes - PUBLIC (no auth required)
+Route::prefix('signup')->name('signup.')->group(function () {
+    Route::post('start', [App\Http\Controllers\Signup\SignupController::class, 'start'])->name('start');
+    Route::post('select-medication', [App\Http\Controllers\Signup\SignupController::class, 'selectMedication'])->name('select-medication');
+    Route::post('select-condition', [App\Http\Controllers\Signup\SignupController::class, 'selectCondition'])->name('select-condition');
+    Route::post('select-plan', [App\Http\Controllers\Signup\SignupController::class, 'selectPlan'])->name('select-plan');
+    Route::post('complete-questionnaire', [App\Http\Controllers\Signup\SignupController::class, 'completeQuestionnaire'])->name('complete-questionnaire');
+    Route::post('process-payment', [App\Http\Controllers\Signup\SignupController::class, 'processPayment'])->name('process-payment');
+    Route::post('create-subscription', [App\Http\Controllers\Signup\SignupController::class, 'createSubscription'])->name('create-subscription');
+    Route::post('fail', [App\Http\Controllers\Signup\SignupController::class, 'fail'])->name('fail');
+    Route::get('{signupId}/status', [App\Http\Controllers\Signup\SignupController::class, 'status'])->name('status');
+});
+
 Route::middleware('auth')->group(function () {
     Route::get('dashboard/patients', function (\Illuminate\Http\Request $request) {
         $user = $request->user();
@@ -217,7 +230,6 @@ Route::middleware('auth')->group(function () {
         Route::post('{paymentMethod}/set-default', [PaymentMethodController::class, 'setDefault'])
             ->name('api.payment-methods.set-default');
     });
-
 
 
     // Clinical routes
