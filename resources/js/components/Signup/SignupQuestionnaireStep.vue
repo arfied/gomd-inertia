@@ -23,6 +23,9 @@ const questions = ref<Question[]>([])
 const responses = ref<Record<string, any>>({})
 const currentQuestionIndex = ref(0)
 const loadingQuestions = ref(false)
+const questionnaireUuid = ref<string | null>(null)
+const validationErrors = ref<Record<string, string>>({})
+const submitting = ref(false)
 
 const currentQuestion = computed(() => questions.value[currentQuestionIndex.value])
 const isFirstQuestion = computed(() => currentQuestionIndex.value === 0)
@@ -77,6 +80,7 @@ async function loadQuestionnaire() {
 
         const response = await axios.get(`/api/questionnaires?${params}`)
         questions.value = response.data.data || []
+        questionnaireUuid.value = response.data.questionnaire_uuid || null
 
         if (questions.value.length === 0) {
             signupStore.error = 'No questionnaire available'
@@ -104,10 +108,18 @@ function previousQuestion() {
 }
 
 async function submitQuestionnaire() {
+    validationErrors.value = {}
+    submitting.value = true
     try {
-        await signupStore.completeQuestionnaire(responses.value)
-    } catch (error) {
+        await signupStore.completeQuestionnaire(responses.value, questionnaireUuid.value)
+    } catch (error: any) {
         console.error('Failed to submit questionnaire:', error)
+        // Handle validation errors from the API
+        if (error.response?.status === 422 && error.response?.data?.errors) {
+            validationErrors.value = error.response.data.errors
+        }
+    } finally {
+        submitting.value = false
     }
 }
 </script>
@@ -141,6 +153,16 @@ async function submitQuestionnaire() {
                         :style="{ width: `${progressPercentage}%` }"
                     />
                 </div>
+            </div>
+
+            <!-- Error Messages -->
+            <div v-if="Object.keys(validationErrors).length > 0" class="mb-6 p-4 bg-red-50 border border-red-200 rounded-md">
+                <p class="text-sm font-medium text-red-800 mb-2">Please fix the following errors:</p>
+                <ul class="space-y-1">
+                    <li v-for="(error, field) in validationErrors" :key="field" class="text-sm text-red-700">
+                        <strong>{{ field }}:</strong> {{ error }}
+                    </li>
+                </ul>
             </div>
 
             <!-- Current Question -->
@@ -235,17 +257,18 @@ async function submitQuestionnaire() {
             <div class="flex justify-between gap-4 pt-6">
                 <button
                     @click="previousQuestion"
-                    :disabled="isFirstQuestion || signupStore.loading"
+                    :disabled="isFirstQuestion || signupStore.loading || submitting"
                     class="px-4 py-2 border rounded-md hover:bg-gray-50 disabled:opacity-50"
                 >
                     Previous
                 </button>
                 <button
                     @click="nextQuestion"
-                    :disabled="signupStore.loading"
+                    :disabled="signupStore.loading || submitting"
                     class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50"
                 >
-                    {{ isLastQuestion ? 'Submit' : 'Next' }}
+                    <span v-if="submitting && isLastQuestion" class="inline-block animate-spin mr-2">⏳</span>
+                    {{ submitting && isLastQuestion ? 'Submitting...' : (isLastQuestion ? 'Submit' : 'Next') }}
                 </button>
             </div>
         </div>

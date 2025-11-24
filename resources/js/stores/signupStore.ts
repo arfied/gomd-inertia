@@ -117,13 +117,15 @@ export const useSignupStore = defineStore('signup', () => {
         }
     }
 
-    async function completeQuestionnaire(responses: Record<string, any>) {
+    async function completeQuestionnaire(responses: Record<string, any>, questionnaireUuid: string | null) {
         if (!state.value.signupId) throw new Error('Signup not started')
+        if (!questionnaireUuid) throw new Error('Questionnaire UUID not available')
         loading.value = true
         error.value = null
         try {
-            await axios.post('/signup/complete-questionnaire', {
-                signup_id: state.value.signupId,
+            await axios.post('/api/questionnaires/submit', {
+                questionnaire_uuid: questionnaireUuid,
+                patient_id: state.value.userId,
                 responses,
             })
             state.value.questionnaireResponses = responses

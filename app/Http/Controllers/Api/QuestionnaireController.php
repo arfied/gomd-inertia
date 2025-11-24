@@ -39,6 +39,7 @@ class QuestionnaireController extends Controller
         if (!$questionnaire) {
             return response()->json([
                 'data' => [],
+                'questionnaire_uuid' => null,
             ]);
         }
 
@@ -50,6 +51,7 @@ class QuestionnaireController extends Controller
 
         return response()->json([
             'data' => $questions,
+            'questionnaire_uuid' => $questionnaire->questionnaire_uuid,
         ]);
     }
 }
