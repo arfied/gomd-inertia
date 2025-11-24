@@ -36,6 +36,7 @@ class SignupReadModel extends Model
     ];
 
     protected $casts = [
+        'medication_name' => 'json',
         'questionnaire_responses' => 'json',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
@@ -102,7 +103,7 @@ class SignupReadModel extends Model
      */
     public function scopeWithMedication($query, string $medicationName)
     {
-        return $query->where('medication_name', $medicationName);
+        return $query->whereJsonContains('medication_name', $medicationName);
     }
 
     /**

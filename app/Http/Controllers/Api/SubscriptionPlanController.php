@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 
 class SubscriptionPlanController extends Controller
 {
+    const CURRENT_GROUP_OFFERED = 3;
     /**
      * Get list of subscription plans for signup flow.
      */
@@ -16,19 +17,17 @@ class SubscriptionPlanController extends Controller
     {
         $query = SubscriptionPlan::query();
 
-        // Filter by search query
         if ($request->has('search')) {
             $search = $request->input('search');
             $query->where('name', 'like', "%{$search}%");
         }
 
-        // Filter by active status
         $query->where('is_active', true);
 
-        // Order by display order
+        $query->where('group_id', self::CURRENT_GROUP_OFFERED);
+
         $query->orderBy('display_order', 'asc');
 
-        // Paginate results using simplePaginate
         $plans = $query->select('id', 'name', 'price', 'duration_months', 'features', 'benefits', 'is_featured')->simplePaginate(20);
 
         return response()->json([

@@ -180,7 +180,8 @@ class SignupController extends Controller
             'subscription_id' => 'required|string|uuid',
             'user_id' => 'required|string',
             'plan_id' => 'required|string|uuid',
-            'medication_id' => 'nullable|string|uuid',
+            'medication_names' => 'nullable|array',
+            'medication_names.*' => 'string',
             'condition_id' => 'nullable|string|uuid',
         ]);
 
@@ -189,7 +190,7 @@ class SignupController extends Controller
             subscriptionId: $data['subscription_id'],
             userId: $data['user_id'],
             planId: $data['plan_id'],
-            medicationId: $data['medication_id'] ?? null,
+            medicationNames: $data['medication_names'] ?? [],
             conditionId: $data['condition_id'] ?? null,
             metadata: ['source' => 'web', 'ip' => $request->ip()],
         );

@@ -30,7 +30,7 @@ class CreateSubscriptionHandler implements CommandHandler
             $command->subscriptionId,
             $command->userId,
             $command->planId,
-            $command->medicationId,
+            $command->medicationNames,
             $command->conditionId,
         );
 

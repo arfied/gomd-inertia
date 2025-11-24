@@ -14,7 +14,7 @@ class CreateSubscription implements Command
         public string $subscriptionId,
         public string $userId,
         public string $planId,
-        public ?string $medicationId = null,
+        public array $medicationNames = [],
         public ?string $conditionId = null,
         public array $metadata = [],
     ) {

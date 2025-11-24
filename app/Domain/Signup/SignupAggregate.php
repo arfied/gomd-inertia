@@ -19,7 +19,7 @@ class SignupAggregate extends AggregateRoot
     public string $signupId;
     public string|int|null $userId;
     public string $signupPath;
-    public ?string $medicationName = null;
+    public array $medicationNames = [];
     public ?string $conditionId = null;
     public ?string $planId = null;
     public array $questionnaireResponses = [];
@@ -105,7 +105,10 @@ class SignupAggregate extends AggregateRoot
 
     public function selectMedication(string $medicationName): void
     {
-        $this->recordThat(new MedicationSelected($this->signupId, $medicationName));
+        // Only add if not already selected
+        if (!in_array($medicationName, $this->medicationNames)) {
+            $this->recordThat(new MedicationSelected($this->signupId, $medicationName));
+        }
     }
 
     public function selectCondition(string $conditionId): void
@@ -132,7 +135,7 @@ class SignupAggregate extends AggregateRoot
         string $subscriptionId,
         string $userId,
         string $planId,
-        ?string $medicationId = null,
+        array $medicationNames = [],
         ?string $conditionId = null,
     ): void {
         $this->recordThat(new SubscriptionCreated(
@@ -140,7 +143,7 @@ class SignupAggregate extends AggregateRoot
             $subscriptionId,
             $userId,
             $planId,
-            $medicationId,
+            $medicationNames,
             $conditionId,
         ));
     }
@@ -175,7 +178,9 @@ class SignupAggregate extends AggregateRoot
 
     private function applyMedicationSelected(MedicationSelected $event): void
     {
-        $this->medicationName = $event->medicationName;
+        if (!in_array($event->medicationName, $this->medicationNames)) {
+            $this->medicationNames[] = $event->medicationName;
+        }
     }
 
     private function applyConditionSelected(ConditionSelected $event): void

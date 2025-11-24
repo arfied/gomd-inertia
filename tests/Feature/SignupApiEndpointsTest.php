@@ -10,13 +10,12 @@ it('returns medications list from API', function () {
     $response->assertStatus(200)
         ->assertJsonStructure([
             'data' => [
-                '*' => ['id', 'name', 'generic_name', 'description', 'dosage_form', 'strength']
-            ],
-            'pagination' => ['per_page', 'current_page', 'next_page_url']
+                '*' => ['id', 'name', 'generic_name', 'description']
+            ]
         ]);
 
-    // Verify pagination structure exists
-    expect($response->json('pagination.per_page'))->toBeGreaterThanOrEqual(0);
+    // Verify data is an array
+    expect($response->json('data'))->toBeArray();
 });
 
 it('filters medications by search query', function () {

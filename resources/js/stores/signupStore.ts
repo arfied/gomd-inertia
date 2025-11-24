@@ -6,7 +6,7 @@ export interface SignupState {
     signupId: string | null
     userId: string | null
     signupPath: 'medication_first' | 'condition_first' | 'plan_first' | null
-    medicationName: string | null
+    medicationNames: string[]
     conditionId: string | null
     planId: string | null
     questionnaireResponses: Record<string, any>
@@ -24,7 +24,7 @@ export const useSignupStore = defineStore('signup', () => {
         signupId: null,
         userId: null,
         signupPath: null,
-        medicationName: null,
+        medicationNames: [],
         conditionId: null,
         planId: null,
         questionnaireResponses: {},
@@ -69,7 +69,10 @@ export const useSignupStore = defineStore('signup', () => {
                 signup_id: state.value.signupId,
                 medication_name: medicationName,
             })
-            state.value.medicationName = medicationName
+            // Add medication to array if not already present
+            if (!state.value.medicationNames.includes(medicationName)) {
+                state.value.medicationNames.push(medicationName)
+            }
         } catch (err: any) {
             error.value = err.response?.data?.message || 'Failed to select medication'
             throw err
@@ -164,7 +167,7 @@ export const useSignupStore = defineStore('signup', () => {
                 subscription_id: subscriptionId,
                 user_id: userId,
                 plan_id: state.value.planId,
-                medication_name: state.value.medicationName,
+                medication_names: state.value.medicationNames,
                 condition_id: state.value.conditionId,
             })
             state.value.subscriptionId = subscriptionId
@@ -204,7 +207,7 @@ export const useSignupStore = defineStore('signup', () => {
             signupId: null,
             userId: null,
             signupPath: null,
-            medicationName: null,
+            medicationNames: [],
             conditionId: null,
             planId: null,
             questionnaireResponses: {},

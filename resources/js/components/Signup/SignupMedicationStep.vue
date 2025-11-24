@@ -1,16 +1,22 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useSignupStore } from '@/stores/signupStore'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 import axios from 'axios'
 
 interface Medication {
     id: string
     name: string
+    generic_name: string
     description?: string
-    dosage?: string
+}
+
+function truncateDescription(description: string | undefined, maxLength: number = 50): string {
+    if (!description) return ''
+    return description.length > maxLength ? description.substring(0, maxLength) + '...' : description
 }
 
 const signupStore = useSignupStore()
@@ -18,6 +24,8 @@ const medications = ref<Medication[]>([])
 const filteredMedications = ref<Medication[]>([])
 const searchQuery = ref('')
 const loadingMeds = ref(false)
+
+const selectedMedications = computed(() => signupStore.state.medicationNames)
 
 onMounted(async () => {
     await loadMedications()
@@ -61,6 +69,20 @@ async function selectMedication(medicationName: string) {
 
 <template>
     <div class="space-y-4">
+        <!-- Selected Medications Display -->
+        <div v-if="selectedMedications.length > 0" class="mb-6 p-4 bg-indigo-50 rounded-lg border border-indigo-200">
+            <p class="text-sm font-medium text-indigo-900 mb-2">Selected Medications:</p>
+            <div class="flex flex-wrap gap-2">
+                <Badge
+                    v-for="med in selectedMedications"
+                    :key="med"
+                    class="bg-indigo-600 text-white"
+                >
+                    {{ med }}
+                </Badge>
+            </div>
+        </div>
+
         <div class="mb-6">
             <Input
                 v-model="searchQuery"
@@ -94,24 +116,25 @@ async function selectMedication(medicationName: string) {
                 <Card
                     :class="[
                         'cursor-pointer transition-all hover:shadow-md',
-                        signupStore.state.medicationName === medication.name
+                        selectedMedications.includes(medication.name)
                             ? 'ring-2 ring-indigo-600 bg-indigo-50'
                             : 'hover:border-indigo-300',
                     ]"
                 >
                     <CardContent>
                         <div class="flex items-start justify-between">
-                            <div>
-                                <h3 class="font-semibold text-gray-900">{{ medication.name }}</h3>
-                                <p v-if="medication.description" class="text-sm text-gray-600 mt-1">
-                                    {{ medication.description }}
-                                </p>
-                                <p v-if="medication.dosage" class="text-sm text-gray-500 mt-1">
-                                    Dosage: {{ medication.dosage }}
+                            <div class="flex-1">
+                                <h3 class="font-semibold text-gray-900">{{ medication.generic_name }}</h3>
+                                <p
+                                    v-if="medication.description"
+                                    class="text-sm text-gray-600 mt-1 cursor-help"
+                                    :title="medication.description"
+                                >
+                                    {{ truncateDescription(medication.description) }}
                                 </p>
                             </div>
                             <div
-                                v-if="signupStore.state.medicationName === medication.name"
+                                v-if="selectedMedications.includes(medication.name)"
                                 class="w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center flex-shrink-0"
                             >
                                 <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
