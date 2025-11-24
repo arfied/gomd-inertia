@@ -24,6 +24,9 @@ use App\Http\Controllers\SubscriptionAnalyticsDashboardController;
 use App\Http\Controllers\PaymentMethodController;
 use App\Http\Controllers\Admin\SubscriptionConfigurationController;
 use App\Http\Controllers\Admin\FailedRenewalsController;
+use App\Http\Controllers\Api\MedicationController;
+use App\Http\Controllers\Api\ConditionController;
+use App\Http\Controllers\Api\SubscriptionPlanController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
@@ -43,6 +46,10 @@ Route::get('dashboard', function () {
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 // Signup routes - PUBLIC (no auth required)
+Route::get('signup', function () {
+    return Inertia::render('Signup');
+})->name('signup.index');
+
 Route::prefix('signup')->name('signup.')->group(function () {
     Route::post('start', [App\Http\Controllers\Signup\SignupController::class, 'start'])->name('start');
     Route::post('select-medication', [App\Http\Controllers\Signup\SignupController::class, 'selectMedication'])->name('select-medication');
@@ -53,6 +60,16 @@ Route::prefix('signup')->name('signup.')->group(function () {
     Route::post('create-subscription', [App\Http\Controllers\Signup\SignupController::class, 'createSubscription'])->name('create-subscription');
     Route::post('fail', [App\Http\Controllers\Signup\SignupController::class, 'fail'])->name('fail');
     Route::get('{signupId}/status', [App\Http\Controllers\Signup\SignupController::class, 'status'])->name('status');
+});
+
+// Public API routes for signup flow
+Route::prefix('api')->group(function () {
+    Route::get('medications', [MedicationController::class, 'index'])->name('api.medications.index');
+    Route::get('medications/{medication}', [MedicationController::class, 'show'])->name('api.medications.show');
+    Route::get('conditions', [ConditionController::class, 'index'])->name('api.conditions.index');
+    Route::get('conditions/{condition}', [ConditionController::class, 'show'])->name('api.conditions.show');
+    Route::get('plans', [SubscriptionPlanController::class, 'index'])->name('api.plans.index');
+    Route::get('plans/{plan}', [SubscriptionPlanController::class, 'show'])->name('api.plans.show');
 });
 
 Route::middleware('auth')->group(function () {

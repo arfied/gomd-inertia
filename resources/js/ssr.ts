@@ -3,6 +3,7 @@ import createServer from '@inertiajs/vue3/server';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createSSRApp, DefineComponent, h } from 'vue';
 import { renderToString } from 'vue/server-renderer';
+import { createPinia } from 'pinia';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
@@ -21,6 +22,7 @@ createServer(
                 const app = createSSRApp({ render: () => h(App, props) });
 
                 app.use(plugin);
+                app.use(createPinia());
 
                 // PrimeVue integration removed for now; we will add it back on
                 // the server side when the PrimeVue-based dashboard layout is

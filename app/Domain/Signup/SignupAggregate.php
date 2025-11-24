@@ -17,7 +17,7 @@ use App\Models\StoredEvent;
 class SignupAggregate extends AggregateRoot
 {
     public string $signupId;
-    public string $userId;
+    public string|int|null $userId;
     public string $signupPath;
     public ?string $medicationId = null;
     public ?string $conditionId = null;

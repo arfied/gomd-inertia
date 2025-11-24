@@ -16,7 +16,7 @@ class StartSignup implements Command
 {
     public function __construct(
         public string $signupId,
-        public string $userId,
+        public string|int|null $userId,
         public string $signupPath, // medication_first, condition_first, plan_first
         public array $metadata = [],
     ) {

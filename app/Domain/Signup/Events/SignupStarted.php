@@ -8,7 +8,7 @@ class SignupStarted extends DomainEvent
 {
     public function __construct(
         public readonly string $signupId,
-        public readonly string $userId,
+        public readonly string|int|null $userId,
         public readonly string $signupPath, // 'medication_first', 'condition_first', 'plan_first'
         array $payload = [],
         array $metadata = [],

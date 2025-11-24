@@ -32,7 +32,7 @@ class SignupController extends Controller
 
         $command = new StartSignup(
             signupId: $signupId,
-            userId: $request->user()?->id ?? (string) Str::uuid(),
+            userId: $request->user()?->id ?? null,
             signupPath: $data['signup_path'],
             metadata: ['source' => 'web', 'ip' => $request->ip()],
         );
