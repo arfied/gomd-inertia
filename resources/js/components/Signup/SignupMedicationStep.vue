@@ -9,7 +9,6 @@ import axios from 'axios'
 
 interface Medication {
     id: string
-    name: string
     generic_name: string
     description?: string
 }
@@ -53,7 +52,7 @@ function filterMedications() {
 
     const query = searchQuery.value.toLowerCase()
     filteredMedications.value = medications.value.filter(med =>
-        med.name.toLowerCase().includes(query) ||
+        med.generic_name.toLowerCase().includes(query) ||
         med.description?.toLowerCase().includes(query)
     )
 }
@@ -109,14 +108,14 @@ async function selectMedication(medicationName: string) {
             <button
                 v-for="medication in filteredMedications"
                 :key="medication.id"
-                @click="selectMedication(medication.name)"
+                @click="selectMedication(medication.generic_name)"
                 :disabled="signupStore.loading"
                 class="text-left"
             >
                 <Card
                     :class="[
                         'cursor-pointer transition-all hover:shadow-md',
-                        selectedMedications.includes(medication.name)
+                        selectedMedications.includes(medication.generic_name)
                             ? 'ring-2 ring-indigo-600 bg-indigo-50'
                             : 'hover:border-indigo-300',
                     ]"
@@ -134,7 +133,7 @@ async function selectMedication(medicationName: string) {
                                 </p>
                             </div>
                             <div
-                                v-if="selectedMedications.includes(medication.name)"
+                                v-if="selectedMedications.includes(medication.generic_name)"
                                 class="w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center flex-shrink-0"
                             >
                                 <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
