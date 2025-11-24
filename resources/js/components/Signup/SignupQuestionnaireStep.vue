@@ -9,9 +9,13 @@ import axios from 'axios'
 interface Question {
     id: string
     text: string
-    type: 'text' | 'checkbox' | 'radio' | 'textarea'
-    options?: string[]
+    type: 'text' | 'checkbox' | 'radio' | 'textarea' | 'select' | 'date' | 'number'
+    options?: Array<{ value: string; label: string }> | string[]
     required?: boolean
+    section?: string
+    order?: number
+    parent_question_id?: string | null
+    parent_answer_value?: string | null
 }
 
 const signupStore = useSignupStore()
@@ -27,6 +31,33 @@ const progressPercentage = computed(() => {
     if (questions.value.length === 0) return 0
     return ((currentQuestionIndex.value + 1) / questions.value.length) * 100
 })
+
+// Check if current question should be displayed based on parent question conditions
+const shouldShowCurrentQuestion = computed(() => {
+    const question = currentQuestion.value
+    if (!question) return false
+
+    // If no parent question, always show
+    if (!question.parent_question_id) return true
+
+    // Find parent question
+    const parentQuestion = questions.value.find(q => q.id === question.parent_question_id)
+    if (!parentQuestion) return true
+
+    // Check if parent answer matches the required value
+    const parentAnswer = responses.value[parentQuestion.id]
+    return parentAnswer === question.parent_answer_value
+})
+
+// Helper to get option value (handles both string and object formats)
+function getOptionValue(option: any): string {
+    return typeof option === 'string' ? option : option.value
+}
+
+// Helper to get option label (handles both string and object formats)
+function getOptionLabel(option: any): string {
+    return typeof option === 'string' ? option : option.label
+}
 
 onMounted(async () => {
     await loadQuestionnaire()
@@ -113,7 +144,7 @@ async function submitQuestionnaire() {
             </div>
 
             <!-- Current Question -->
-            <div v-if="currentQuestion" class="space-y-4">
+            <div v-if="currentQuestion && shouldShowCurrentQuestion" class="space-y-4">
                 <Label class="text-lg font-semibold">
                     {{ currentQuestion.text }}
                     <span v-if="currentQuestion.required" class="text-red-500">*</span>
@@ -127,6 +158,21 @@ async function submitQuestionnaire() {
                     placeholder="Enter your answer"
                 />
 
+                <!-- Number Input -->
+                <Input
+                    v-if="currentQuestion.type === 'number'"
+                    v-model.number="responses[currentQuestion.id]"
+                    type="number"
+                    placeholder="Enter a number"
+                />
+
+                <!-- Date Input -->
+                <Input
+                    v-if="currentQuestion.type === 'date'"
+                    v-model="responses[currentQuestion.id]"
+                    type="date"
+                />
+
                 <!-- Textarea -->
                 <textarea
                     v-if="currentQuestion.type === 'textarea'"
@@ -136,36 +182,51 @@ async function submitQuestionnaire() {
                     placeholder="Enter your answer"
                 />
 
+                <!-- Select -->
+                <select
+                    v-if="currentQuestion.type === 'select'"
+                    v-model="responses[currentQuestion.id]"
+                    class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                >
+                    <option value="">Select an option</option>
+                    <option v-for="option in currentQuestion.options" :key="getOptionValue(option)" :value="getOptionValue(option)">
+                        {{ getOptionLabel(option) }}
+                    </option>
+                </select>
+
                 <!-- Checkbox -->
                 <div v-if="currentQuestion.type === 'checkbox'" class="space-y-3">
-                    <div v-for="option in currentQuestion.options" :key="option" class="flex items-center gap-2">
+                    <div v-for="option in currentQuestion.options" :key="getOptionValue(option)" class="flex items-center gap-2">
                         <Checkbox
-                            :id="`option-${option}`"
-                            :checked="responses[currentQuestion.id]?.includes(option)"
-                            @update:checked="(checked) => {
+                            :id="`option-${getOptionValue(option)}`"
+                            :checked="responses[currentQuestion.id]?.includes(getOptionValue(option)) ?? false"
+                            @update:checked="(checked: boolean) => {
                                 if (!responses[currentQuestion.id]) responses[currentQuestion.id] = []
+                                const val = getOptionValue(option)
                                 if (checked) {
-                                    responses[currentQuestion.id].push(option)
+                                    if (!responses[currentQuestion.id].includes(val)) {
+                                        responses[currentQuestion.id].push(val)
+                                    }
                                 } else {
-                                    responses[currentQuestion.id] = responses[currentQuestion.id].filter((o: string) => o !== option)
+                                    responses[currentQuestion.id] = responses[currentQuestion.id].filter((o: string) => o !== val)
                                 }
                             }"
                         />
-                        <Label :for="`option-${option}`" class="font-normal cursor-pointer">{{ option }}</Label>
+                        <Label :for="`option-${getOptionValue(option)}`" class="font-normal cursor-pointer">{{ getOptionLabel(option) }}</Label>
                     </div>
                 </div>
 
                 <!-- Radio -->
                 <div v-if="currentQuestion.type === 'radio'" class="space-y-3">
-                    <div v-for="option in currentQuestion.options" :key="option" class="flex items-center gap-2">
+                    <div v-for="option in currentQuestion.options" :key="getOptionValue(option)" class="flex items-center gap-2">
                         <input
-                            :id="`radio-${option}`"
+                            :id="`radio-${getOptionValue(option)}`"
                             v-model="responses[currentQuestion.id]"
                             type="radio"
-                            :value="option"
+                            :value="getOptionValue(option)"
                             class="w-4 h-4 text-indigo-600"
                         />
-                        <Label :for="`radio-${option}`" class="font-normal cursor-pointer">{{ option }}</Label>
+                        <Label :for="`radio-${getOptionValue(option)}`" class="font-normal cursor-pointer">{{ getOptionLabel(option) }}</Label>
                     </div>
                 </div>
             </div>

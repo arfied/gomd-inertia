@@ -11,12 +11,12 @@ class QuestionnaireController extends Controller
 {
     /**
      * Get questionnaire for signup flow.
-     * 
-     * Can filter by medication_id or condition_id.
+     *
+     * Can filter by medication_name or condition_id.
      */
     public function index(Request $request): JsonResponse
     {
-        $medicationId = $request->query('medication_id');
+        $medicationName = $request->query('medication_name');
         $conditionId = $request->query('condition_id');
 
         $query = QuestionnaireReadModel::query()
@@ -24,9 +24,9 @@ class QuestionnaireController extends Controller
 
         // For now, return a default questionnaire if no specific filters
         // In the future, this could be customized based on medication/condition
-        if ($medicationId) {
+        if ($medicationName) {
             // Filter by medication if needed
-            // $query->where('medication_id', $medicationId);
+            // $query->where('medication_name', $medicationName);
         }
 
         if ($conditionId) {
