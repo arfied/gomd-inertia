@@ -20,6 +20,7 @@ class QuestionnaireReadModel extends Model
         'questionnaire_uuid',
         'title',
         'description',
+        'questions',
         'questions_count',
         'status',
         'created_by',
@@ -31,6 +32,7 @@ class QuestionnaireReadModel extends Model
     ];
 
     protected $casts = [
+        'questions' => 'array',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'completion_rate' => 'float',

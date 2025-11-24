@@ -36,12 +36,17 @@ async function loadQuestionnaire() {
     loadingQuestions.value = true
     try {
         const params = new URLSearchParams()
-        if (signupStore.state.medicationId) params.set('medication_id', signupStore.state.medicationId)
-        if (signupStore.state.conditionId) params.set('condition_id', signupStore.state.conditionId)
-        
+        // Use medicationNames (first medication if available) and conditionId
+        if (signupStore.state.medicationNames.length > 0) {
+            params.set('medication_name', signupStore.state.medicationNames[0])
+        }
+        if (signupStore.state.conditionId) {
+            params.set('condition_id', signupStore.state.conditionId)
+        }
+
         const response = await axios.get(`/api/questionnaires?${params}`)
         questions.value = response.data.data || []
-        
+
         if (questions.value.length === 0) {
             signupStore.error = 'No questionnaire available'
         }

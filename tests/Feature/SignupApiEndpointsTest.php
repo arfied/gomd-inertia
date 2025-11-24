@@ -3,6 +3,7 @@
 use App\Models\Medication;
 use App\Models\Condition;
 use App\Models\SubscriptionPlan;
+use App\Models\QuestionnaireReadModel;
 
 it('returns medications list from API', function () {
     $response = $this->getJson('/api/medications');
@@ -135,5 +136,34 @@ it('returns single plan by ID', function () {
     $response->assertStatus(200)
         ->assertJsonPath('data.id', $plan->id)
         ->assertJsonPath('data.name', $plan->name);
+});
+
+it('returns questionnaire for signup flow', function () {
+    $questions = [
+        ['id' => 'q1', 'text' => 'How are you feeling?', 'type' => 'text'],
+        ['id' => 'q2', 'text' => 'Any allergies?', 'type' => 'checkbox'],
+    ];
+
+    QuestionnaireReadModel::create([
+        'questionnaire_uuid' => 'questionnaire-uuid-123',
+        'title' => 'Signup Questionnaire',
+        'description' => 'Initial questionnaire',
+        'questions' => $questions,
+        'status' => 'active',
+    ]);
+
+    $response = $this->getJson('/api/questionnaires');
+
+    $response->assertStatus(200)
+        ->assertJsonCount(2, 'data')
+        ->assertJsonPath('data.0.id', 'q1')
+        ->assertJsonPath('data.0.text', 'How are you feeling?');
+});
+
+it('returns empty questionnaire when none exist', function () {
+    $response = $this->getJson('/api/questionnaires');
+
+    $response->assertStatus(200)
+        ->assertJsonPath('data', []);
 });
 

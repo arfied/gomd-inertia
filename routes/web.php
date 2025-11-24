@@ -27,6 +27,7 @@ use App\Http\Controllers\Admin\FailedRenewalsController;
 use App\Http\Controllers\Api\MedicationController;
 use App\Http\Controllers\Api\ConditionController;
 use App\Http\Controllers\Api\SubscriptionPlanController;
+use App\Http\Controllers\Api\QuestionnaireController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
@@ -70,6 +71,7 @@ Route::prefix('api')->group(function () {
     Route::get('conditions/{condition}', [ConditionController::class, 'show'])->name('api.conditions.show');
     Route::get('plans', [SubscriptionPlanController::class, 'index'])->name('api.plans.index');
     Route::get('plans/{plan}', [SubscriptionPlanController::class, 'show'])->name('api.plans.show');
+    Route::get('questionnaires', [QuestionnaireController::class, 'index'])->name('api.questionnaires.index');
 });
 
 Route::middleware('auth')->group(function () {
