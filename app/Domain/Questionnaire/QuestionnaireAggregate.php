@@ -102,7 +102,7 @@ class QuestionnaireAggregate extends AggregateRoot
         return 'questionnaire';
     }
 
-    public function submitResponse(string $patientId, array $responses, array $metadata = []): void
+    public function submitResponse(?string $patientId, array $responses, array $metadata = []): void
     {
         $this->recordThat(new QuestionnaireResponseSubmitted(
             $this->questionnaireId,

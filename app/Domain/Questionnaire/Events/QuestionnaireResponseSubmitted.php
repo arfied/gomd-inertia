@@ -8,7 +8,7 @@ class QuestionnaireResponseSubmitted extends DomainEvent
 {
     public function __construct(
         public readonly string $questionnaireId,
-        public readonly string $patientId,
+        public readonly ?string $patientId,
         public readonly array $responses,
         public readonly bool $isValid = true,
         array $payload = [],
@@ -25,7 +25,7 @@ class QuestionnaireResponseSubmitted extends DomainEvent
     {
         return new self(
             questionnaireId: $eventData['questionnaire_id'] ?? $aggregateUuid,
-            patientId: $eventData['patient_id'] ?? '',
+            patientId: $eventData['patient_id'] ?? null,
             responses: $eventData['responses'] ?? [],
             isValid: $eventData['is_valid'] ?? true,
             payload: $eventData,

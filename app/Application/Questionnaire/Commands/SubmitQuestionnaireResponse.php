@@ -11,7 +11,7 @@ class SubmitQuestionnaireResponse implements Command
 {
     public function __construct(
         public string $questionnaireId,
-        public string $patientId,
+        public ?string $patientId,
         public array $responses,
         public array $metadata = [],
     ) {
