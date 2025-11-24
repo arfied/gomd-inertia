@@ -10,7 +10,7 @@ it('returns medications list from API', function () {
     $response->assertStatus(200)
         ->assertJsonStructure([
             'data' => [
-                '*' => ['id', 'name', 'generic_name', 'description']
+                '*' => ['id', 'generic_name', 'description']
             ]
         ]);
 
@@ -21,17 +21,17 @@ it('returns medications list from API', function () {
 it('filters medications by search query', function () {
     Medication::factory()->create([
         'status' => 'approved',
-        'name' => 'Aspirin Test',
+        'generic_name' => 'Acetylsalicylic acid',
         'description' => 'Pain reliever',
     ]);
 
-    $response = $this->getJson('/api/medications?search=Aspirin');
+    $response = $this->getJson('/api/medications?search=Acetylsalicylic');
 
     $response->assertStatus(200);
 
-    // Check if any results contain Aspirin
+    // Check if any results contain the generic name
     $data = $response->json('data');
-    $found = collect($data)->contains(fn($item) => str_contains($item['name'], 'Aspirin'));
+    $found = collect($data)->contains(fn($item) => str_contains($item['generic_name'], 'Acetylsalicylic'));
     expect($found)->toBeTrue();
 });
 
@@ -68,6 +68,7 @@ it('filters conditions by search query', function () {
 it('returns subscription plans list from API', function () {
     SubscriptionPlan::factory()->count(3)->create([
         'is_active' => true,
+        'group_id' => 3,
     ]);
 
     $response = $this->getJson('/api/plans');
@@ -85,10 +86,12 @@ it('returns subscription plans list from API', function () {
 it('filters plans by search query', function () {
     SubscriptionPlan::factory()->create([
         'is_active' => true,
+        'group_id' => 3,
         'name' => 'Premium Plan',
     ]);
     SubscriptionPlan::factory()->create([
         'is_active' => true,
+        'group_id' => 3,
         'name' => 'Basic Plan',
     ]);
 

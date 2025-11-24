@@ -101,7 +101,7 @@ class SignupController extends Controller
     {
         $data = $request->validate([
             'signup_id' => 'required|string|uuid',
-            'plan_id' => 'required|string|uuid',
+            'plan_id' => 'required|integer',
         ]);
 
         $command = new SelectPlan(

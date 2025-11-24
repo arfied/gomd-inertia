@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import axios from 'axios'
 
 interface Plan {
-    id: string
+    id: number
     name: string
     description?: string
     price: number
@@ -36,7 +36,7 @@ async function loadPlans() {
     }
 }
 
-async function selectPlan(planId: string) {
+async function selectPlan(planId: number) {
     try {
         await signupStore.selectPlan(planId)
     } catch (error) {

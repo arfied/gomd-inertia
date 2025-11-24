@@ -8,7 +8,7 @@ export interface SignupState {
     signupPath: 'medication_first' | 'condition_first' | 'plan_first' | null
     medicationNames: string[]
     conditionId: string | null
-    planId: string | null
+    planId: number | null
     questionnaireResponses: Record<string, any>
     paymentId: string | null
     paymentAmount: number | null
@@ -99,7 +99,7 @@ export const useSignupStore = defineStore('signup', () => {
         }
     }
 
-    async function selectPlan(planId: string) {
+    async function selectPlan(planId: number) {
         if (!state.value.signupId) throw new Error('Signup not started')
         loading.value = true
         error.value = null
