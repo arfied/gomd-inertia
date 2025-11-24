@@ -51,6 +51,10 @@ use App\Application\Signup\Handlers\CompleteQuestionnaireHandler;
 use App\Application\Signup\Handlers\ProcessPaymentHandler;
 use App\Application\Signup\Handlers\CreateSubscriptionHandler;
 use App\Application\Signup\Handlers\FailSignupHandler;
+use App\Application\Questionnaire\Commands\CreateQuestionnaire as CreateQuestionnaireCommand;
+use App\Application\Questionnaire\Commands\SubmitQuestionnaireResponse as SubmitQuestionnaireResponseCommand;
+use App\Application\Questionnaire\Handlers\CreateQuestionnaireHandler as CreateQuestionnaireCommandHandler;
+use App\Application\Questionnaire\Handlers\SubmitQuestionnaireResponseHandler as SubmitQuestionnaireResponseCommandHandler;
 use App\Application\MedicationCatalog\Handlers\AddMedicationToFormularyHandler;
 use App\Application\MedicationCatalog\Handlers\CreateConditionHandler;
 use App\Application\MedicationCatalog\Handlers\CreateFormularyHandler;
@@ -497,6 +501,17 @@ class AppServiceProvider extends ServiceProvider
             $bus->register(
                 FailSignup::class,
                 $app->make(FailSignupHandler::class)
+            );
+
+            // Questionnaire command handlers
+            $bus->register(
+                CreateQuestionnaireCommand::class,
+                $app->make(CreateQuestionnaireCommandHandler::class)
+            );
+
+            $bus->register(
+                SubmitQuestionnaireResponseCommand::class,
+                $app->make(SubmitQuestionnaireResponseCommandHandler::class)
             );
         });
 

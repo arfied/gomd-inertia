@@ -65,6 +65,10 @@ return [
         'signup.payment_processed' => App\Domain\Signup\Events\PaymentProcessed::class,
         'signup.subscription_created' => App\Domain\Signup\Events\SubscriptionCreated::class,
         'signup.failed' => App\Domain\Signup\Events\SignupFailed::class,
+        // Questionnaire domain events
+        'questionnaire.created' => App\Domain\Questionnaire\Events\QuestionnaireCreated::class,
+        'questionnaire.response_submitted' => App\Domain\Questionnaire\Events\QuestionnaireResponseSubmitted::class,
+        'questionnaire.validation_failed' => App\Domain\Questionnaire\Events\QuestionnaireValidationFailed::class,
     ],
 
     'projections' => [

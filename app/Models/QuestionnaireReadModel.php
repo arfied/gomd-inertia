@@ -21,6 +21,7 @@ class QuestionnaireReadModel extends Model
         'title',
         'description',
         'questions',
+        'responses',
         'questions_count',
         'status',
         'created_by',
@@ -29,12 +30,15 @@ class QuestionnaireReadModel extends Model
         'completion_rate',
         'created_at',
         'updated_at',
+        'submitted_at',
     ];
 
     protected $casts = [
         'questions' => 'array',
+        'responses' => 'array',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
+        'submitted_at' => 'datetime',
         'completion_rate' => 'float',
     ];
 
