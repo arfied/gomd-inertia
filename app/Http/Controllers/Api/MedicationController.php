@@ -14,6 +14,7 @@ class MedicationController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
+        // Get unique medication names first
         $query = Medication::query();
 
         // Filter by search query
@@ -30,19 +31,24 @@ class MedicationController extends Controller
         // Order by name
         $query->orderBy('name', 'asc');
 
-        // Group by name to avoid duplicates
-        $query->groupBy('name');
+        // Get one medication per unique name using subquery
+        $subquery = $query->selectRaw('MIN(id) as id')
+            ->groupBy('name');
 
-        // Paginate results
-        $medications = $query->select('id', 'name', 'generic_name', 'description', 'dosage_form', 'strength')->paginate(20);
+        // Now get the full medication details for those IDs
+        $medications = Medication::whereIn('id', $subquery)
+            ->select('id', 'name', 'generic_name', 'description', 'dosage_form', 'strength')
+            ->orderBy('name', 'asc')
+            ->simplePaginate(20);
 
         return response()->json([
             'data' => $medications->items(),
             'pagination' => [
-                'total' => $medications->total(),
+                // 'total' => $medications->total(),
                 'per_page' => $medications->perPage(),
                 'current_page' => $medications->currentPage(),
-                'last_page' => $medications->lastPage(),
+                'next_page_url' => $medications->nextPageUrl(),
+                // 'last_page' => $medications->lastPage(),
             ],
         ]);
     }

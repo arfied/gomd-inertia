@@ -8,11 +8,25 @@ class MedicationSelected extends DomainEvent
 {
     public function __construct(
         public readonly string $signupId,
-        public readonly string $medicationId,
+        public readonly string $medicationName,
         array $payload = [],
         array $metadata = [],
     ) {
         parent::__construct($signupId, $payload, $metadata);
+    }
+
+    /**
+     * Reconstruct event from stored event data.
+     * Used during event rehydration from the event store.
+     */
+    public static function fromStoredEventData(string $aggregateUuid, array $eventData, array $metadata = []): self
+    {
+        return new self(
+            signupId: $eventData['signup_id'] ?? $aggregateUuid,
+            medicationName: $eventData['medication_name'] ?? '',
+            payload: $eventData,
+            metadata: $metadata,
+        );
     }
 
     public static function eventType(): string
@@ -33,7 +47,7 @@ class MedicationSelected extends DomainEvent
             'event_type' => self::eventType(),
             'event_data' => json_encode([
                 'signup_id' => $this->signupId,
-                'medication_id' => $this->medicationId,
+                'medication_name' => $this->medicationName,
                 ...$this->payload,
             ]),
             'metadata' => json_encode($this->metadata),

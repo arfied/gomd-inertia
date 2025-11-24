@@ -19,6 +19,24 @@ class SubscriptionCreated extends DomainEvent
         parent::__construct($signupId, $payload, $metadata);
     }
 
+    /**
+     * Reconstruct event from stored event data.
+     * Used during event rehydration from the event store.
+     */
+    public static function fromStoredEventData(string $aggregateUuid, array $eventData, array $metadata = []): self
+    {
+        return new self(
+            signupId: $eventData['signup_id'] ?? $aggregateUuid,
+            subscriptionId: $eventData['subscription_id'] ?? '',
+            userId: $eventData['user_id'] ?? '',
+            planId: $eventData['plan_id'] ?? '',
+            medicationId: $eventData['medication_id'] ?? null,
+            conditionId: $eventData['condition_id'] ?? null,
+            payload: $eventData,
+            metadata: $metadata,
+        );
+    }
+
     public static function eventType(): string
     {
         return 'signup.subscription_created';

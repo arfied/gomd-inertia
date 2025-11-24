@@ -24,16 +24,15 @@ class ConditionController extends Controller
                 ->orWhere('therapeutic_use', 'like', "%{$search}%");
         }
 
-        // Paginate results
-        $conditions = $query->select('id', 'name', 'description', 'therapeutic_use')->paginate(20);
+        // Paginate results using simplePaginate
+        $conditions = $query->select('id', 'name', 'description', 'therapeutic_use')->simplePaginate(20);
 
         return response()->json([
             'data' => $conditions->items(),
             'pagination' => [
-                'total' => $conditions->total(),
                 'per_page' => $conditions->perPage(),
                 'current_page' => $conditions->currentPage(),
-                'last_page' => $conditions->lastPage(),
+                'next_page_url' => $conditions->nextPageUrl(),
             ],
         ]);
     }

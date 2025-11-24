@@ -11,7 +11,7 @@ class SelectMedication implements Command
 {
     public function __construct(
         public string $signupId,
-        public string $medicationId,
+        public string $medicationName,
         public array $metadata = [],
     ) {
     }

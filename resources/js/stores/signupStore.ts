@@ -6,7 +6,7 @@ export interface SignupState {
     signupId: string | null
     userId: string | null
     signupPath: 'medication_first' | 'condition_first' | 'plan_first' | null
-    medicationId: string | null
+    medicationName: string | null
     conditionId: string | null
     planId: string | null
     questionnaireResponses: Record<string, any>
@@ -24,7 +24,7 @@ export const useSignupStore = defineStore('signup', () => {
         signupId: null,
         userId: null,
         signupPath: null,
-        medicationId: null,
+        medicationName: null,
         conditionId: null,
         planId: null,
         questionnaireResponses: {},
@@ -60,16 +60,16 @@ export const useSignupStore = defineStore('signup', () => {
         }
     }
 
-    async function selectMedication(medicationId: string) {
+    async function selectMedication(medicationName: string) {
         if (!state.value.signupId) throw new Error('Signup not started')
         loading.value = true
         error.value = null
         try {
             await axios.post('/signup/select-medication', {
                 signup_id: state.value.signupId,
-                medication_id: medicationId,
+                medication_name: medicationName,
             })
-            state.value.medicationId = medicationId
+            state.value.medicationName = medicationName
         } catch (err: any) {
             error.value = err.response?.data?.message || 'Failed to select medication'
             throw err
@@ -164,7 +164,7 @@ export const useSignupStore = defineStore('signup', () => {
                 subscription_id: subscriptionId,
                 user_id: userId,
                 plan_id: state.value.planId,
-                medication_id: state.value.medicationId,
+                medication_name: state.value.medicationName,
                 condition_id: state.value.conditionId,
             })
             state.value.subscriptionId = subscriptionId
@@ -204,7 +204,7 @@ export const useSignupStore = defineStore('signup', () => {
             signupId: null,
             userId: null,
             signupPath: null,
-            medicationId: null,
+            medicationName: null,
             conditionId: null,
             planId: null,
             questionnaireResponses: {},

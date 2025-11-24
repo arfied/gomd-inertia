@@ -13,7 +13,7 @@ class ProjectMedicationSelected
 
         if ($signup) {
             $signup->update([
-                'medication_id' => $event->medicationId,
+                'medication_name' => $event->medicationName,
                 'updated_at' => $event->occurredAt,
             ]);
         }

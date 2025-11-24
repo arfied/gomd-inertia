@@ -12,11 +12,11 @@ it('returns medications list from API', function () {
             'data' => [
                 '*' => ['id', 'name', 'generic_name', 'description', 'dosage_form', 'strength']
             ],
-            'pagination' => ['total', 'per_page', 'current_page', 'last_page']
+            'pagination' => ['per_page', 'current_page', 'next_page_url']
         ]);
 
     // Verify pagination structure exists
-    expect($response->json('pagination.total'))->toBeGreaterThanOrEqual(0);
+    expect($response->json('pagination.per_page'))->toBeGreaterThanOrEqual(0);
 });
 
 it('filters medications by search query', function () {
@@ -44,7 +44,7 @@ it('returns conditions list from API', function () {
             'data' => [
                 '*' => ['id', 'name', 'description', 'therapeutic_use']
             ],
-            'pagination' => ['total', 'per_page', 'current_page', 'last_page']
+            'pagination' => ['per_page', 'current_page', 'next_page_url']
         ]);
 });
 
@@ -78,7 +78,7 @@ it('returns subscription plans list from API', function () {
             'data' => [
                 '*' => ['id', 'name', 'price', 'duration_months', 'features', 'benefits', 'is_featured']
             ],
-            'pagination' => ['total', 'per_page', 'current_page', 'last_page']
+            'pagination' => ['per_page', 'current_page', 'next_page_url']
         ])
         ->assertJsonCount(3, 'data');
 });

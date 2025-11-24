@@ -28,16 +28,15 @@ class SubscriptionPlanController extends Controller
         // Order by display order
         $query->orderBy('display_order', 'asc');
 
-        // Paginate results
-        $plans = $query->select('id', 'name', 'price', 'duration_months', 'features', 'benefits', 'is_featured')->paginate(20);
+        // Paginate results using simplePaginate
+        $plans = $query->select('id', 'name', 'price', 'duration_months', 'features', 'benefits', 'is_featured')->simplePaginate(20);
 
         return response()->json([
             'data' => $plans->items(),
             'pagination' => [
-                'total' => $plans->total(),
                 'per_page' => $plans->perPage(),
                 'current_page' => $plans->currentPage(),
-                'last_page' => $plans->lastPage(),
+                'next_page_url' => $plans->nextPageUrl(),
             ],
         ]);
     }

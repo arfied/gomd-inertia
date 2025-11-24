@@ -53,12 +53,12 @@ class SignupController extends Controller
     {
         $data = $request->validate([
             'signup_id' => 'required|string|uuid',
-            'medication_id' => 'required|string|uuid',
+            'medication_name' => 'required|string',
         ]);
 
         $command = new SelectMedication(
             signupId: $data['signup_id'],
-            medicationId: $data['medication_id'],
+            medicationName: $data['medication_name'],
             metadata: ['source' => 'web', 'ip' => $request->ip()],
         );
 

@@ -19,7 +19,7 @@ class SignupAggregate extends AggregateRoot
     public string $signupId;
     public string|int|null $userId;
     public string $signupPath;
-    public ?string $medicationId = null;
+    public ?string $medicationName = null;
     public ?string $conditionId = null;
     public ?string $planId = null;
     public array $questionnaireResponses = [];
@@ -44,11 +44,52 @@ class SignupAggregate extends AggregateRoot
      */
     public static function fromEventStream(string $signupId): self
     {
+        $registry = app(\App\Services\ProjectionRegistry::class);
+
         $events = StoredEvent::where('aggregate_uuid', $signupId)
             ->where('aggregate_type', self::aggregateType())
             ->orderBy('id')
             ->get()
-            ->map(fn ($stored) => $stored->toDomainEvent())
+            ->map(function ($stored) use ($registry) {
+                $class = $registry->eventClassFor($stored->event_type);
+
+                if ($class === null || ! is_subclass_of($class, \App\Domain\Events\DomainEvent::class)) {
+                    return null;
+                }
+
+                // Ensure event_data is an array (decode JSON if needed)
+                $eventData = $stored->event_data;
+                if (is_string($eventData)) {
+                    $eventData = json_decode($eventData, true) ?? [];
+                }
+
+                $metadata = $stored->metadata;
+                if (is_string($metadata)) {
+                    $metadata = json_decode($metadata, true) ?? [];
+                }
+
+                // Use factory method if available for custom event reconstruction
+                if (method_exists($class, 'fromStoredEventData')) {
+                    $event = $class::fromStoredEventData(
+                        $stored->aggregate_uuid,
+                        $eventData,
+                        $metadata,
+                    );
+                } else {
+                    $event = new $class(
+                        $stored->aggregate_uuid,
+                        $eventData,
+                        $metadata,
+                    );
+                }
+
+                if ($stored->occurred_at instanceof \DateTimeInterface) {
+                    $event->occurredAt = \DateTimeImmutable::createFromInterface($stored->occurred_at);
+                }
+
+                return $event;
+            })
+            ->filter(fn ($event) => $event !== null)
             ->all();
 
         return self::reconstituteFromHistory($events);
@@ -62,9 +103,9 @@ class SignupAggregate extends AggregateRoot
         return 'signup';
     }
 
-    public function selectMedication(string $medicationId): void
+    public function selectMedication(string $medicationName): void
     {
-        $this->recordThat(new MedicationSelected($this->signupId, $medicationId));
+        $this->recordThat(new MedicationSelected($this->signupId, $medicationName));
     }
 
     public function selectCondition(string $conditionId): void
@@ -134,7 +175,7 @@ class SignupAggregate extends AggregateRoot
 
     private function applyMedicationSelected(MedicationSelected $event): void
     {
-        $this->medicationId = $event->medicationId;
+        $this->medicationName = $event->medicationName;
     }
 
     private function applyConditionSelected(ConditionSelected $event): void

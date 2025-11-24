@@ -26,7 +26,7 @@ class SelectMedicationHandler implements CommandHandler
 
         $signup = SignupAggregate::fromEventStream($command->signupId);
 
-        $signup->selectMedication($command->medicationId);
+        $signup->selectMedication($command->medicationName);
 
         foreach ($signup->releaseEvents() as $event) {
             $this->eventStore->store($event);

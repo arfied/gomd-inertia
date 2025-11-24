@@ -15,6 +15,20 @@ class ConditionSelected extends DomainEvent
         parent::__construct($signupId, $payload, $metadata);
     }
 
+    /**
+     * Reconstruct event from stored event data.
+     * Used during event rehydration from the event store.
+     */
+    public static function fromStoredEventData(string $aggregateUuid, array $eventData, array $metadata = []): self
+    {
+        return new self(
+            signupId: $eventData['signup_id'] ?? $aggregateUuid,
+            conditionId: $eventData['condition_id'] ?? '',
+            payload: $eventData,
+            metadata: $metadata,
+        );
+    }
+
     public static function eventType(): string
     {
         return 'signup.condition_selected';

@@ -50,9 +50,9 @@ function filterMedications() {
     )
 }
 
-async function selectMedication(medicationId: string) {
+async function selectMedication(medicationName: string) {
     try {
-        await signupStore.selectMedication(medicationId)
+        await signupStore.selectMedication(medicationName)
     } catch (error) {
         console.error('Failed to select medication:', error)
     }
@@ -87,14 +87,14 @@ async function selectMedication(medicationId: string) {
             <button
                 v-for="medication in filteredMedications"
                 :key="medication.id"
-                @click="selectMedication(medication.id)"
+                @click="selectMedication(medication.name)"
                 :disabled="signupStore.loading"
                 class="text-left"
             >
                 <Card
                     :class="[
                         'cursor-pointer transition-all hover:shadow-md',
-                        signupStore.state.medicationId === medication.id
+                        signupStore.state.medicationName === medication.name
                             ? 'ring-2 ring-indigo-600 bg-indigo-50'
                             : 'hover:border-indigo-300',
                     ]"
@@ -111,7 +111,7 @@ async function selectMedication(medicationId: string) {
                                 </p>
                             </div>
                             <div
-                                v-if="signupStore.state.medicationId === medication.id"
+                                v-if="signupStore.state.medicationName === medication.name"
                                 class="w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center flex-shrink-0"
                             >
                                 <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">

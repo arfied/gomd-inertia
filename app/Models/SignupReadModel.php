@@ -20,7 +20,7 @@ class SignupReadModel extends Model
         'signup_uuid',
         'user_id',
         'signup_path',
-        'medication_id',
+        'medication_name',
         'condition_id',
         'plan_id',
         'questionnaire_responses',
@@ -100,9 +100,9 @@ class SignupReadModel extends Model
     /**
      * Get signups with a specific medication.
      */
-    public function scopeWithMedication($query, string $medicationId)
+    public function scopeWithMedication($query, string $medicationName)
     {
-        return $query->where('medication_id', $medicationId);
+        return $query->where('medication_name', $medicationName);
     }
 
     /**
