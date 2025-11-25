@@ -6,6 +6,10 @@ import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import axios from 'axios'
 
+const emit = defineEmits<{
+    completed: []
+}>()
+
 interface Question {
     id: string
     text: string
@@ -112,6 +116,8 @@ async function submitQuestionnaire() {
     submitting.value = true
     try {
         await signupStore.completeQuestionnaire(responses.value, questionnaireUuid.value)
+        // Emit completed event to parent component
+        emit('completed')
     } catch (error: any) {
         console.error('Failed to submit questionnaire:', error)
         // Handle validation errors from the API

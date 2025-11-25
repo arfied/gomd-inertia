@@ -39,7 +39,7 @@ const canGoForward = computed(() => {
         case 'path-selection':
             return signupStore.state.signupPath !== null
         case 'medication':
-            return signupStore.state.medicationId !== null
+            return signupStore.state.medicationNames.length > 0
         case 'condition':
             return signupStore.state.conditionId !== null
         case 'plan':
@@ -93,6 +93,11 @@ function goForward() {
     if (canGoForward.value && currentStep.value < steps.value.length - 1) {
         currentStep.value++
     }
+}
+
+function handleQuestionnaireCompleted() {
+    // Questionnaire was successfully submitted, advance to next step
+    goForward()
 }
 
 function handleReset() {
@@ -154,7 +159,10 @@ function handleReset() {
                     <SignupPlanStep v-if="currentStepName === 'plan'" />
 
                     <!-- Questionnaire -->
-                    <SignupQuestionnaireStep v-if="currentStepName === 'questionnaire'" />
+                    <SignupQuestionnaireStep
+                        v-if="currentStepName === 'questionnaire'"
+                        @completed="handleQuestionnaireCompleted"
+                    />
 
                     <!-- Payment -->
                     <SignupPaymentStep v-if="currentStepName === 'payment'" />
