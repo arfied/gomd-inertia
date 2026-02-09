@@ -6,6 +6,7 @@ export interface SignupState {
     signupId: string | null
     userId: string | null
     signupPath: 'medication_first' | 'condition_first' | 'plan_first' | null
+    email: string | null
     medicationNames: string[]
     conditionId: string | null
     planId: number | null
@@ -24,6 +25,7 @@ export const useSignupStore = defineStore('signup', () => {
         signupId: null,
         userId: null,
         signupPath: null,
+        email: null,
         medicationNames: [],
         conditionId: null,
         planId: null,
@@ -62,6 +64,12 @@ export const useSignupStore = defineStore('signup', () => {
 
     async function selectMedication(medicationName: string) {
         if (!state.value.signupId) throw new Error('Signup not started')
+
+        // Check if already selected - if so, deselect
+        if (state.value.medicationNames.includes(medicationName)) {
+            return deselectMedication(medicationName)
+        }
+
         loading.value = true
         error.value = null
         try {
@@ -78,6 +86,13 @@ export const useSignupStore = defineStore('signup', () => {
             throw err
         } finally {
             loading.value = false
+        }
+    }
+
+    function deselectMedication(medicationName: string) {
+        const index = state.value.medicationNames.indexOf(medicationName)
+        if (index > -1) {
+            state.value.medicationNames.splice(index, 1)
         }
     }
 
@@ -209,6 +224,7 @@ export const useSignupStore = defineStore('signup', () => {
             signupId: null,
             userId: null,
             signupPath: null,
+            email: null,
             medicationNames: [],
             conditionId: null,
             planId: null,
@@ -223,6 +239,11 @@ export const useSignupStore = defineStore('signup', () => {
         }
         loading.value = false
         error.value = null
+    }
+
+    function nextStep() {
+        // This is a placeholder for step navigation
+        // The actual step navigation is handled by the Signup.vue component
     }
 
     return {
@@ -241,6 +262,7 @@ export const useSignupStore = defineStore('signup', () => {
         createSubscription,
         failSignup,
         reset,
+        nextStep,
     }
 })
 

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * Read model for questionnaires.
@@ -10,6 +11,9 @@ use Illuminate\Database\Eloquent\Model;
  * This materialized view is updated by event handlers listening to
  * questionnaire events. It provides optimized queries for questionnaire
  * retrieval, filtering, and analytics.
+ *
+ * Note: Questionnaire responses are now stored in a separate questionnaire_responses
+ * table to support multiple responses per questionnaire.
  */
 class QuestionnaireReadModel extends Model
 {
@@ -21,26 +25,33 @@ class QuestionnaireReadModel extends Model
         'title',
         'description',
         'questions',
-        'responses',
         'questions_count',
         'status',
         'created_by',
-        'patient_id',
         'response_count',
         'completion_rate',
         'created_at',
         'updated_at',
-        'submitted_at',
     ];
 
     protected $casts = [
         'questions' => 'array',
-        'responses' => 'array',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
-        'submitted_at' => 'datetime',
         'completion_rate' => 'float',
     ];
+
+    /**
+     * Get all responses for this questionnaire.
+     */
+    public function responses(): HasMany
+    {
+        return $this->hasMany(
+            QuestionnaireResponse::class,
+            'questionnaire_uuid',
+            'questionnaire_uuid'
+        );
+    }
 
     /**
      * Get all active questionnaires.
@@ -48,14 +59,6 @@ class QuestionnaireReadModel extends Model
     public function scopeActive($query)
     {
         return $query->where('status', 'active');
-    }
-
-    /**
-     * Get questionnaires for a specific patient.
-     */
-    public function scopeForPatient($query, string $patientId)
-    {
-        return $query->where('patient_id', $patientId);
     }
 
     /**

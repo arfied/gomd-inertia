@@ -70,11 +70,12 @@ class QuestionnaireSubmissionIntegrationTest extends TestCase
         $response->assertStatus(200)
             ->assertJsonPath('success', true);
 
-        // Verify responses are stored in read model
-        $questionnaire = QuestionnaireReadModel::where('questionnaire_uuid', 'questionnaire-uuid-456')->first();
-        expect($questionnaire->responses)->toEqual(['q1' => 'I am feeling great']);
-        expect($questionnaire->patient_id)->toBe('patient-123');
-        expect($questionnaire->status)->toBe('submitted');
+        // Verify responses are stored in questionnaire_responses table
+        $questionnaireResponse = \App\Models\QuestionnaireResponse::where('questionnaire_uuid', 'questionnaire-uuid-456')
+            ->where('patient_id', 'patient-123')
+            ->first();
+        expect($questionnaireResponse)->not->toBeNull();
+        expect($questionnaireResponse->responses)->toEqual(['q1' => 'I am feeling great']);
     }
 
     public function test_questionnaire_submission_without_uuid_fails(): void

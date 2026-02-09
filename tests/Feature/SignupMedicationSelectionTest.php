@@ -100,3 +100,39 @@ it('validates medication_name is a string', function () {
         ->assertJsonValidationErrors(['medication_name']);
 });
 
+it('prevents duplicate medication selection', function () {
+    $medication = Medication::factory()->create([
+        'status' => 'approved',
+        'name' => 'Aspirin 500mg',
+    ]);
+
+    // Start signup
+    $response = $this->postJson('/signup/start', [
+        'signup_path' => 'medication_first',
+    ]);
+
+    $signupId = $response->json('signup_id');
+
+    // Select medication
+    $this->postJson('/signup/select-medication', [
+        'signup_id' => $signupId,
+        'medication_name' => $medication->name,
+    ])->assertStatus(200);
+
+    // Verify medication is selected
+    $signup = SignupReadModel::where('signup_uuid', $signupId)->first();
+    expect($signup->medication_name)->toContain($medication->name);
+    expect($signup->medication_name)->toHaveCount(1);
+
+    // Try to select same medication again - should not create duplicate
+    $this->postJson('/signup/select-medication', [
+        'signup_id' => $signupId,
+        'medication_name' => $medication->name,
+    ])->assertStatus(200);
+
+    // Verify medication is still only selected once
+    $signup = SignupReadModel::where('signup_uuid', $signupId)->first();
+    expect($signup->medication_name)->toHaveCount(1);
+    expect($signup->medication_name)->toContain($medication->name);
+});
+

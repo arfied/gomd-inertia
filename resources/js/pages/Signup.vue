@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import AlertError from '@/components/AlertError.vue'
 import {
     SignupPathSelector,
+    SignupEmailStep,
     SignupMedicationStep,
     SignupConditionStep,
     SignupPlanStep,
@@ -18,14 +19,15 @@ import {
 const signupStore = useSignupStore()
 
 const currentStep = ref(0)
+const emailStepRef = ref<InstanceType<typeof SignupEmailStep> | null>(null)
 
 const steps = computed(() => {
     if (!signupStore.state.signupPath) return ['path-selection']
 
     const pathSteps: Record<string, string[]> = {
-        medication_first: ['path-selection', 'medication', 'plan', 'questionnaire', 'payment', 'completion'],
-        condition_first: ['path-selection', 'condition', 'plan', 'questionnaire', 'payment', 'completion'],
-        plan_first: ['path-selection', 'plan', 'payment', 'completion'],
+        medication_first: ['path-selection', 'email', 'medication', 'plan', 'questionnaire', 'payment', 'completion'],
+        condition_first: ['path-selection', 'email', 'condition', 'plan', 'questionnaire', 'payment', 'completion'],
+        plan_first: ['path-selection', 'email', 'plan', 'payment', 'completion'],
     }
 
     return pathSteps[signupStore.state.signupPath] || []
@@ -38,6 +40,9 @@ const canGoForward = computed(() => {
     switch (currentStepName.value) {
         case 'path-selection':
             return signupStore.state.signupPath !== null
+        case 'email':
+            // Check if email input has a value (not yet created)
+            return emailStepRef.value ? (emailStepRef.value as any).email.value?.trim() !== '' : false
         case 'medication':
             return signupStore.state.medicationNames.length > 0
         case 'condition':
@@ -60,6 +65,7 @@ const progressPercentage = computed(() => {
 function getStepTitle(step: string): string {
     const titles: Record<string, string> = {
         'path-selection': 'Choose Your Path',
+        'email': 'Create Your Account',
         'medication': 'Select Medication',
         'condition': 'Select Condition',
         'plan': 'Choose Your Plan',
@@ -73,6 +79,7 @@ function getStepTitle(step: string): string {
 function getStepDescription(step: string): string {
     const descriptions: Record<string, string> = {
         'path-selection': 'Choose how you\'d like to start your signup process',
+        'email': 'Enter your email to create your account',
         'medication': 'Select the medication you\'re interested in',
         'condition': 'Tell us about your health condition',
         'plan': 'Choose the plan that works best for you',
@@ -89,7 +96,20 @@ function goBack() {
     }
 }
 
-function goForward() {
+async function goForward() {
+    // Handle email step - create patient user when Next is clicked
+    if (currentStepName.value === 'email' && emailStepRef.value) {
+        await emailStepRef.value.createPatientUser()
+        // Only advance if user was created successfully
+        if (signupStore.state.email) {
+            if (currentStep.value < steps.value.length - 1) {
+                currentStep.value++
+            }
+        }
+        return
+    }
+
+    // For other steps, just advance
     if (canGoForward.value && currentStep.value < steps.value.length - 1) {
         currentStep.value++
     }
@@ -148,6 +168,9 @@ function handleReset() {
                 <CardContent>
                     <!-- Path Selection -->
                     <SignupPathSelector v-if="currentStepName === 'path-selection'" />
+
+                    <!-- Email Collection -->
+                    <SignupEmailStep v-if="currentStepName === 'email'" ref="emailStepRef" />
 
                     <!-- Medication Selection -->
                     <SignupMedicationStep v-if="currentStepName === 'medication'" />

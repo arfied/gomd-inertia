@@ -205,10 +205,11 @@ class QuestionnaireMigrationTest extends TestCase
         $questionnaire = QuestionnaireReadModel::where('title', 'Comprehensive Health Screening')->first();
         $sections = collect($questionnaire->questions)->pluck('section')->unique();
 
+        $this->assertContains('general', $sections);
         $this->assertContains('cardiovascular', $sections);
         $this->assertContains('neurological', $sections);
         $this->assertContains('mental_health', $sections);
-        $this->assertContains('allergies', $sections);
+        $this->assertContains('pain', $sections);
     }
 
     public function test_seeder_questionnaire_has_conditional_questions(): void

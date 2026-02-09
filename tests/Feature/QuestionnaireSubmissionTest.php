@@ -214,6 +214,13 @@ class QuestionnaireSubmissionTest extends TestCase
 
         $response->assertStatus(200)
             ->assertJsonPath('success', true);
+
+        // Verify response was stored with null patient_id
+        $questionnaireResponse = \App\Models\QuestionnaireResponse::where('questionnaire_uuid', 'questionnaire-uuid-optional')
+            ->first();
+        expect($questionnaireResponse)->not->toBeNull();
+        expect($questionnaireResponse->responses)->toEqual(['q1' => 'answer']);
+        expect($questionnaireResponse->patient_id)->toBeNull();
     }
 }
 

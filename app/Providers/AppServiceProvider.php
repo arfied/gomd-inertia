@@ -36,6 +36,7 @@ use App\Application\Compliance\Handlers\GrantConsentHandler;
 use App\Application\Compliance\Handlers\LogDataAccessHandler;
 use App\Application\Compliance\Handlers\VerifyProviderLicenseHandler;
 use App\Application\Signup\Commands\StartSignup;
+use App\Application\Signup\Commands\CreatePatientUser;
 use App\Application\Signup\Commands\SelectMedication;
 use App\Application\Signup\Commands\SelectCondition;
 use App\Application\Signup\Commands\SelectPlan;
@@ -44,6 +45,7 @@ use App\Application\Signup\Commands\ProcessPayment;
 use App\Application\Signup\Commands\CreateSubscription;
 use App\Application\Signup\Commands\FailSignup;
 use App\Application\Signup\Handlers\StartSignupHandler;
+use App\Application\Signup\Handlers\CreatePatientUserHandler;
 use App\Application\Signup\Handlers\SelectMedicationHandler;
 use App\Application\Signup\Handlers\SelectConditionHandler;
 use App\Application\Signup\Handlers\SelectPlanHandler;
@@ -179,6 +181,8 @@ use App\Domain\Subscription\Events\SubscriptionCancelled;
 use App\Domain\Subscription\Events\PaymentAttempted;
 use App\Domain\Subscription\Events\PaymentFailed;
 use App\Domain\Subscription\Events\SubscriptionRenewalSagaStarted;
+use App\Domain\Signup\Events\PatientUserCreated;
+use App\Listeners\ProjectPatientUserCreated;
 use App\Services\AuthorizeNet\AuthorizeNetApi;
 use App\Services\AuthorizeNet\AuthorizeNetService;
 use App\Services\AuthorizeNet\AchPaymentService;
@@ -301,6 +305,9 @@ class AppServiceProvider extends ServiceProvider
 
         // Register subscription renewal saga listener
         $dispatcher->listen(SubscriptionRenewalSagaStarted::class, \App\Listeners\SubscriptionRenewalSagaStartedListener::class);
+
+        // Register signup event listeners
+        $dispatcher->listen(PatientUserCreated::class, ProjectPatientUserCreated::class);
 
         // Register policies
         Gate::policy(PaymentMethod::class, PaymentMethodPolicy::class);
@@ -466,6 +473,11 @@ class AppServiceProvider extends ServiceProvider
             $bus->register(
                 StartSignup::class,
                 $app->make(StartSignupHandler::class)
+            );
+
+            $bus->register(
+                CreatePatientUser::class,
+                $app->make(CreatePatientUserHandler::class)
             );
 
             $bus->register(

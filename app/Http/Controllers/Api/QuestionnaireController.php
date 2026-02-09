@@ -12,27 +12,14 @@ class QuestionnaireController extends Controller
     /**
      * Get questionnaire for signup flow.
      *
-     * Can filter by medication_name or condition_id.
+     * Returns all questions from the active questionnaire.
+     * Note: Questions are currently general health questions without medication/condition filtering.
+     * Filtering logic can be added once questions have medication_names and condition_id metadata.
      */
     public function index(Request $request): JsonResponse
     {
-        $medicationName = $request->query('medication_name');
-        $conditionId = $request->query('condition_id');
-
         $query = QuestionnaireReadModel::query()
             ->where('status', 'active');
-
-        // For now, return a default questionnaire if no specific filters
-        // In the future, this could be customized based on medication/condition
-        if ($medicationName) {
-            // Filter by medication if needed
-            // $query->where('medication_name', $medicationName);
-        }
-
-        if ($conditionId) {
-            // Filter by condition if needed
-            // $query->where('condition_id', $conditionId);
-        }
 
         $questionnaire = $query->first();
 

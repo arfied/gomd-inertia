@@ -39,6 +39,12 @@ Route::get('/', function () {
     ]);
 })->name('home');
 
+Route::get('/test', function () {
+    return \App\Models\Condition::select('name')
+            ->orderBy('name', 'asc')
+            ->get();
+})->name('test');
+
 // Public referral landing page - tracks clicks and redirects
 Route::get('/ref/{referralCode}', [ReferralTrackingController::class, 'landingPage'])
     ->name('referral.landing');
@@ -54,6 +60,7 @@ Route::get('signup', function () {
 
 Route::prefix('signup')->name('signup.')->group(function () {
     Route::post('start', [App\Http\Controllers\Signup\SignupController::class, 'start'])->name('start');
+    Route::post('create-patient-user', [App\Http\Controllers\Signup\SignupController::class, 'createPatientUser'])->name('create-patient-user');
     Route::post('select-medication', [App\Http\Controllers\Signup\SignupController::class, 'selectMedication'])->name('select-medication');
     Route::post('select-condition', [App\Http\Controllers\Signup\SignupController::class, 'selectCondition'])->name('select-condition');
     Route::post('select-plan', [App\Http\Controllers\Signup\SignupController::class, 'selectPlan'])->name('select-plan');

@@ -6,6 +6,7 @@ use App\Domain\Events\DomainEvent;
 use App\Domain\Shared\AggregateRoot;
 use App\Domain\Signup\Events\ConditionSelected;
 use App\Domain\Signup\Events\MedicationSelected;
+use App\Domain\Signup\Events\PatientUserCreated;
 use App\Domain\Signup\Events\PaymentProcessed;
 use App\Domain\Signup\Events\PlanSelected;
 use App\Domain\Signup\Events\QuestionnaireCompleted;
@@ -103,6 +104,17 @@ class SignupAggregate extends AggregateRoot
         return 'signup';
     }
 
+    public function createPatientUser(string $email, string $password, array $metadata = []): void
+    {
+        $userId = \Illuminate\Support\Str::uuid();
+        $this->recordThat(new PatientUserCreated(
+            $this->signupId,
+            $email,
+            (string) $userId,
+            $metadata,
+        ));
+    }
+
     public function selectMedication(string $medicationName): void
     {
         // Only add if not already selected
@@ -157,6 +169,7 @@ class SignupAggregate extends AggregateRoot
     {
         match ($event::class) {
             SignupStarted::class => $this->applySignupStarted($event),
+            PatientUserCreated::class => $this->applyPatientUserCreated($event),
             MedicationSelected::class => $this->applyMedicationSelected($event),
             ConditionSelected::class => $this->applyConditionSelected($event),
             PlanSelected::class => $this->applyPlanSelected($event),
@@ -174,6 +187,11 @@ class SignupAggregate extends AggregateRoot
         $this->userId = $event->userId;
         $this->signupPath = $event->signupPath;
         $this->status = 'pending';
+    }
+
+    private function applyPatientUserCreated(PatientUserCreated $event): void
+    {
+        $this->userId = $event->userId;
     }
 
     private function applyMedicationSelected(MedicationSelected $event): void

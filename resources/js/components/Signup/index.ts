@@ -1,4 +1,5 @@
 export { default as SignupPathSelector } from './SignupPathSelector.vue'
+export { default as SignupEmailStep } from './SignupEmailStep.vue'
 export { default as SignupMedicationStep } from './SignupMedicationStep.vue'
 export { default as SignupConditionStep } from './SignupConditionStep.vue'
 export { default as SignupPlanStep } from './SignupPlanStep.vue'

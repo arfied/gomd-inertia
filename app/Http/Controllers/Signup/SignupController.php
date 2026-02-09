@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Signup;
 
 use App\Application\Commands\CommandBus;
 use App\Application\Signup\Commands\CompleteQuestionnaire;
+use App\Application\Signup\Commands\CreatePatientUser;
 use App\Application\Signup\Commands\CreateSubscription;
 use App\Application\Signup\Commands\FailSignup;
 use App\Application\Signup\Commands\ProcessPayment;
@@ -43,6 +44,37 @@ class SignupController extends Controller
             'success' => true,
             'signup_id' => $signupId,
             'message' => 'Signup process started',
+        ]);
+    }
+
+    /**
+     * Create patient user with email during signup flow.
+     */
+    public function createPatientUser(Request $request, CommandBus $commandBus): JsonResponse
+    {
+        $data = $request->validate([
+            'signup_id' => 'required|string|uuid',
+            'email' => 'required|email|unique:users,email',
+        ]);
+
+        $command = new CreatePatientUser(
+            signupId: $data['signup_id'],
+            email: $data['email'],
+            metadata: ['source' => 'web', 'ip' => $request->ip()],
+        );
+
+        try {
+            $commandBus->dispatch($command);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to create patient user: ' . $e->getMessage(),
+            ], 500);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Patient user created successfully',
         ]);
     }
 

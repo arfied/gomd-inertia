@@ -70,15 +70,20 @@ async function selectMedication(medicationName: string) {
     <div class="space-y-4">
         <!-- Selected Medications Display -->
         <div v-if="selectedMedications.length > 0" class="mb-6 p-4 bg-indigo-50 rounded-lg border border-indigo-200">
-            <p class="text-sm font-medium text-indigo-900 mb-2">Selected Medications:</p>
+            <p class="text-sm font-medium text-indigo-900 mb-2">Selected Medications (click to deselect):</p>
             <div class="flex flex-wrap gap-2">
-                <Badge
+                <button
                     v-for="med in selectedMedications"
                     :key="med"
-                    class="bg-indigo-600 text-white"
+                    @click="selectMedication(med)"
+                    :disabled="signupStore.loading"
+                    class="inline-flex items-center gap-1 hover:opacity-80 disabled:opacity-50 transition-opacity"
                 >
-                    {{ med }}
-                </Badge>
+                    <Badge class="bg-indigo-600 text-white cursor-pointer">
+                        {{ med }}
+                        <span class="ml-1">✕</span>
+                    </Badge>
+                </button>
             </div>
         </div>
 

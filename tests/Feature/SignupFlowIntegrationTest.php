@@ -21,7 +21,7 @@ class SignupFlowIntegrationTest extends TestCase
         // Setup data
         $medication = Medication::factory()->create(['status' => 'approved', 'name' => 'Aspirin 500mg']);
         $plan = SubscriptionPlan::factory()->create(['name' => 'Basic Plan', 'price' => 99.99]);
-        
+
         $questions = [
             ['id' => 'q1', 'text' => 'How are you?', 'type' => 'text', 'required' => true],
         ];
@@ -72,10 +72,11 @@ class SignupFlowIntegrationTest extends TestCase
         ]);
         $response->assertStatus(200);
 
-        // Verify questionnaire responses stored
-        $questionnaire = QuestionnaireReadModel::where('questionnaire_uuid', 'questionnaire-uuid-flow')->first();
-        expect($questionnaire->responses)->toEqual(['q1' => 'I am feeling great']);
-        expect($questionnaire->status)->toBe('submitted');
+        // Verify questionnaire responses stored in questionnaire_responses table
+        $questionnaireResponse = \App\Models\QuestionnaireResponse::where('questionnaire_uuid', 'questionnaire-uuid-flow')
+            ->first();
+        expect($questionnaireResponse)->not->toBeNull();
+        expect($questionnaireResponse->responses)->toEqual(['q1' => 'I am feeling great']);
     }
 
     public function test_questionnaire_api_returns_uuid_for_signup_flow(): void

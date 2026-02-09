@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useSignupStore } from '@/stores/signupStore'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -30,6 +30,7 @@ const loadingQuestions = ref(false)
 const questionnaireUuid = ref<string | null>(null)
 const validationErrors = ref<Record<string, string>>({})
 const submitting = ref(false)
+const questionnairesLoaded = ref(false)
 
 const currentQuestion = computed(() => questions.value[currentQuestionIndex.value])
 const isFirstQuestion = computed(() => currentQuestionIndex.value === 0)
@@ -67,16 +68,30 @@ function getOptionLabel(option: any): string {
 }
 
 onMounted(async () => {
-    await loadQuestionnaire()
+    // Restore responses from store if they exist
+    if (Object.keys(signupStore.state.questionnaireResponses).length > 0) {
+        responses.value = { ...signupStore.state.questionnaireResponses }
+    }
+
+    // Only load questionnaire if not already loaded
+    if (!questionnairesLoaded.value) {
+        await loadQuestionnaire()
+        questionnairesLoaded.value = true
+    }
 })
+
+// Reload questionnaire when medications change
+watch(() => signupStore.state.medicationNames, () => {
+    loadQuestionnaire()
+}, { deep: true })
 
 async function loadQuestionnaire() {
     loadingQuestions.value = true
     try {
         const params = new URLSearchParams()
-        // Use medicationNames (first medication if available) and conditionId
+        // Pass all selected medications (comma-separated)
         if (signupStore.state.medicationNames.length > 0) {
-            params.set('medication_name', signupStore.state.medicationNames[0])
+            params.set('medication_names', signupStore.state.medicationNames.join(','))
         }
         if (signupStore.state.conditionId) {
             params.set('condition_id', signupStore.state.conditionId)
@@ -113,6 +128,13 @@ function previousQuestion() {
 
 async function submitQuestionnaire() {
     validationErrors.value = {}
+
+    // Verify userId exists before allowing submission
+    if (!signupStore.state.userId) {
+        signupStore.error = 'User must be created before submitting questionnaire responses'
+        return
+    }
+
     submitting.value = true
     try {
         await signupStore.completeQuestionnaire(responses.value, questionnaireUuid.value)

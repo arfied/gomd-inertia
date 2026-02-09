@@ -3,14 +3,15 @@
 namespace App\Application\Signup\Handlers;
 
 use App\Application\Commands\CommandHandler;
-use App\Application\Signup\Commands\CompleteQuestionnaire;
+use App\Application\Signup\Commands\CreatePatientUser;
 use App\Domain\Shared\Commands\Command;
 use App\Domain\Signup\SignupAggregate;
 use App\Services\EventStoreContract;
 use Illuminate\Contracts\Events\Dispatcher;
+use Illuminate\Support\Str;
 use InvalidArgumentException;
 
-class CompleteQuestionnaireHandler implements CommandHandler
+class CreatePatientUserHandler implements CommandHandler
 {
     public function __construct(
         private EventStoreContract $eventStore,
@@ -20,18 +21,21 @@ class CompleteQuestionnaireHandler implements CommandHandler
 
     public function handle(Command $command): void
     {
-        if (! $command instanceof CompleteQuestionnaire) {
-            throw new InvalidArgumentException('CompleteQuestionnaireHandler can only handle CompleteQuestionnaire commands');
+        if (!$command instanceof CreatePatientUser) {
+            throw new InvalidArgumentException('CreatePatientUserHandler can only handle CreatePatientUser commands');
         }
 
         $signup = SignupAggregate::fromEventStream($command->signupId);
 
-        // Verify that userId is set before allowing questionnaire submission
-        if (! $signup->userId) {
-            throw new InvalidArgumentException('User must be created before submitting questionnaire responses');
-        }
+        // Generate a random password for the user
+        $randomPassword = Str::random(16);
 
-        $signup->completeQuestionnaire($command->responses);
+        // Create patient user event
+        $signup->createPatientUser(
+            $command->email,
+            $randomPassword,
+            $command->metadata,
+        );
 
         foreach ($signup->releaseEvents() as $event) {
             $this->eventStore->store($event);
