@@ -47,6 +47,82 @@ class PatientSubscriptionController extends Controller
         return $this->formatSubscriptionResponse($subscription);
     }
 
+    public function create(Request $request, QueryBus $queryBus, EventStoreContract $eventStore, Dispatcher $dispatcher): JsonResponse
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        $data = $request->validate([
+            'plan_id' => 'required|integer|exists:subscription_plans,id',
+            'payment_method_id' => 'required|integer|exists:payment_methods,id',
+            'payment_id' => 'required|string',
+            'amount' => 'required|numeric|min:0.01',
+        ]);
+
+        // Verify the payment method belongs to the user
+        $paymentMethod = \App\Models\PaymentMethod::where('id', $data['payment_method_id'])
+            ->where('user_id', $user->id)
+            ->first();
+
+        if (!$paymentMethod) {
+            return response()->json(['error' => 'Payment method not found'], 404);
+        }
+
+        // Get the plan
+        $plan = \App\Models\SubscriptionPlan::find($data['plan_id']);
+        if (!$plan) {
+            return response()->json(['error' => 'Plan not found'], 404);
+        }
+
+        try {
+            // Create subscription
+            $subscription = \App\Models\Subscription::create([
+                'user_id' => $user->id,
+                'plan_id' => $plan->id,
+                'starts_at' => now(),
+                'ends_at' => now()->addMonths($plan->duration_months),
+                'status' => \App\Models\Subscription::STATUS_ACTIVE,
+                'is_trial' => false,
+            ]);
+
+            // Record the subscription created event
+            $aggregate = \App\Domain\Subscription\SubscriptionAggregate::create(
+                (string) $subscription->id,
+                [
+                    'user_id' => $user->id,
+                    'plan_id' => $plan->id,
+                    'starts_at' => now()->toDateTimeString(),
+                    'ends_at' => now()->addMonths($plan->duration_months)->toDateTimeString(),
+                ]
+            );
+
+            foreach ($aggregate->getRecordedEvents() as $event) {
+                $eventStore->store($event);
+                $dispatcher->dispatch($event);
+            }
+
+            return response()->json([
+                'success' => true,
+                'subscription' => [
+                    'id' => $subscription->id,
+                    'status' => $subscription->status,
+                    'plan_name' => $plan->name,
+                    'is_trial' => $subscription->is_trial,
+                    'starts_at' => $subscription->starts_at->toISOString(),
+                    'ends_at' => $subscription->ends_at->toISOString(),
+                ],
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Failed to create subscription',
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
     public function renew(
         Request $request,
         QueryBus $queryBus,

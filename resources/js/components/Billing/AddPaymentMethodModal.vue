@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
+import { usePage } from '@inertiajs/vue3'
 import { X } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import CreditCardForm from './Forms/CreditCardForm.vue'
@@ -18,14 +19,28 @@ interface Emits {
 defineProps<Props>()
 const emit = defineEmits<Emits>()
 
+const page = usePage()
+const user = computed(() => (page.props.auth as any)?.user)
+
+const hasBusinessPlan = computed(() => {
+    return !!user.value?.business_id
+})
+
 const activeTab = ref<'credit_card' | 'ach' | 'invoice'>('credit_card')
 const loading = ref(false)
 
-const tabs = [
+const allTabs = [
     { id: 'credit_card', label: 'Credit Card', icon: '💳' },
     { id: 'ach', label: 'Bank Account', icon: '🏦' },
     { id: 'invoice', label: 'Invoice', icon: '📄' },
 ]
+
+const tabs = computed(() => {
+    if (!hasBusinessPlan.value) {
+        return allTabs.filter(tab => tab.id === 'credit_card')
+    }
+    return allTabs
+})
 
 const handleSubmit = async (data: any) => {
     loading.value = true

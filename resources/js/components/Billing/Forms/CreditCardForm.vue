@@ -17,21 +17,25 @@ defineProps<Props>()
 const emit = defineEmits<Emits>()
 
 const form = ref({
-    cc_last_four: '',
+    cc_number: '',
     cc_brand: '',
     cc_expiration_month: '',
     cc_expiration_year: '',
-    cc_token: '',
+    cc_cvv: '',
     is_default: false,
 })
 
 const errors = ref<Record<string, string>>({})
 
+const formatCardNumber = (value: string): string => {
+    return value.replace(/\s/g, '').replace(/(\d{4})/g, '$1 ').trim()
+}
+
 const validateForm = () => {
     errors.value = {}
 
-    if (!form.value.cc_last_four || form.value.cc_last_four.length !== 4) {
-        errors.value.cc_last_four = 'Last 4 digits must be exactly 4 characters'
+    if (!form.value.cc_number || form.value.cc_number.replace(/\s/g, '').length < 13) {
+        errors.value.cc_number = 'Valid card number is required'
     }
 
     if (!form.value.cc_brand) {
@@ -46,8 +50,8 @@ const validateForm = () => {
         errors.value.cc_expiration_year = 'Expiration year is required'
     }
 
-    if (!form.value.cc_token) {
-        errors.value.cc_token = 'Card token is required'
+    if (!form.value.cc_cvv || form.value.cc_cvv.length < 3) {
+        errors.value.cc_cvv = 'Valid CVV is required'
     }
 
     return Object.keys(errors.value).length === 0
@@ -55,13 +59,35 @@ const validateForm = () => {
 
 const handleSubmit = () => {
     if (validateForm()) {
-        emit('submit', form.value)
+        const cardNumber = form.value.cc_number.replace(/\s/g, '')
+        const lastFour = cardNumber.slice(-4)
+
+        emit('submit', {
+            ...form.value,
+            cc_number: cardNumber,  // Full number for tokenization
+            cc_last_four: lastFour,  // Only last 4 for storage
+        })
     }
 }
 </script>
 
 <template>
     <form @submit.prevent="handleSubmit" class="space-y-6">
+        <!-- Card Number -->
+        <div>
+            <Label for="cc_number">Card Number</Label>
+            <Input
+                id="cc_number"
+                v-model="form.cc_number"
+                @input="form.cc_number = formatCardNumber($event.target.value)"
+                type="text"
+                placeholder="1234 5678 9012 3456"
+                maxlength="19"
+                class="mt-1"
+            />
+            <InputError :message="errors.cc_number" />
+        </div>
+
         <!-- Card Brand -->
         <div>
             <Label for="cc_brand">Card Brand</Label>
@@ -75,22 +101,9 @@ const handleSubmit = () => {
                 <option value="Mastercard">Mastercard</option>
                 <option value="American Express">American Express</option>
                 <option value="Discover">Discover</option>
+                <option value="Unknown">Unknown</option>
             </select>
             <InputError :message="errors.cc_brand" />
-        </div>
-
-        <!-- Last 4 Digits -->
-        <div>
-            <Label for="cc_last_four">Last 4 Digits</Label>
-            <Input
-                id="cc_last_four"
-                v-model="form.cc_last_four"
-                type="text"
-                placeholder="1234"
-                maxlength="4"
-                class="mt-1"
-            />
-            <InputError :message="errors.cc_last_four" />
         </div>
 
         <!-- Expiration Month -->
@@ -103,7 +116,7 @@ const handleSubmit = () => {
                     class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 >
                     <option value="">Select month</option>
-                    <option v-for="month in 12" :key="month" :value="month">{{ String(month).padStart(2, '0') }}</option>
+                    <option v-for="month in 12" :key="month" :value="String(month).padStart(2, '0')">{{ String(month).padStart(2, '0') }}</option>
                 </select>
                 <InputError :message="errors.cc_expiration_month" />
             </div>
@@ -117,7 +130,7 @@ const handleSubmit = () => {
                     class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 >
                     <option value="">Select year</option>
-                    <option v-for="year in 20" :key="year" :value="new Date().getFullYear() + year - 1">
+                    <option v-for="year in 20" :key="year" :value="String(new Date().getFullYear() + year - 1)">
                         {{ new Date().getFullYear() + year - 1 }}
                     </option>
                 </select>
@@ -125,8 +138,19 @@ const handleSubmit = () => {
             </div>
         </div>
 
-        <!-- Token (Hidden) -->
-        <input v-model="form.cc_token" type="hidden" />
+        <!-- CVV -->
+        <div>
+            <Label for="cc_cvv">CVV</Label>
+            <Input
+                id="cc_cvv"
+                v-model="form.cc_cvv"
+                type="text"
+                placeholder="123"
+                maxlength="4"
+                class="mt-1"
+            />
+            <InputError :message="errors.cc_cvv" />
+        </div>
 
         <!-- Default Checkbox -->
         <div class="flex items-center">

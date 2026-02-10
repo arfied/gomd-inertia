@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
+import { Badge } from '@/components/ui/badge';
 import {
     Dialog,
     DialogClose,
@@ -307,6 +308,17 @@ function formatTimelineSource(source: string | null): string | null {
         default:
             return source;
     }
+}
+
+type BadgeVariant = 'default' | 'secondary' | 'destructive' | 'outline';
+
+function getSubscriptionStatusBadgeVariant(status: string | null): BadgeVariant {
+    if (!status) return 'outline';
+    const s = status.toLowerCase();
+    if (s === 'active') return 'default';
+    if (s === 'pending_payment' || s.includes('trial')) return 'secondary';
+    if (s === 'cancelled' || s === 'canceled' || s === 'expired') return 'destructive';
+    return 'outline';
 }
 
 function getXsrfToken(): string | null {
@@ -1124,16 +1136,25 @@ onMounted(() => {
                                     A quick view of your current TeleMed Pro subscription.
                                 </CardDescription>
                             </div>
-                            <div v-if="subscription && !loadingSubscription" class="flex flex-col gap-2">
-                                <div v-if="subscription.status === 'cancelled' && subscription.ends_at" class="inline-flex items-center rounded-full bg-destructive/10 px-2.5 py-0.5 text-xs font-medium text-destructive">
-                                    Cancelled on {{ formatActivityTimestamp(subscription.ends_at) }}
-                                </div>
-                                <div v-else-if="subscription.status === 'active' && subscription.ends_at" class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
-                                    Ends on {{ formatActivityTimestamp(subscription.ends_at) }}
-                                </div>
-                                <div v-else-if="subscription.status === 'pending_payment'" class="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">
-                                    Payment pending
-                                </div>
+                            <div v-if="loadingSubscription" class="flex items-center gap-2">
+                                <Spinner class="h-4 w-4" />
+                                <span class="text-xs text-muted-foreground">Loading…</span>
+                            </div>
+                            <div v-else-if="subscription" class="flex flex-col gap-2">
+                                <Badge :variant="getSubscriptionStatusBadgeVariant(subscription.status)">
+                                    <span v-if="subscription.status === 'cancelled' && subscription.ends_at">
+                                        Cancelled on {{ formatActivityTimestamp(subscription.ends_at) }}
+                                    </span>
+                                    <span v-else-if="subscription.status === 'active' && subscription.ends_at">
+                                        Ends on {{ formatActivityTimestamp(subscription.ends_at) }}
+                                    </span>
+                                    <span v-else-if="subscription.status === 'pending_payment'">
+                                        Payment pending
+                                    </span>
+                                    <span v-else>
+                                        {{ subscription.status.replace('_', ' ') }}
+                                    </span>
+                                </Badge>
                             </div>
                         </div>
                     </CardHeader>
@@ -1145,12 +1166,15 @@ onMounted(() => {
                             <Spinner class="h-4 w-4" />
                             <span>Loading subscription…</span>
                         </div>
-                        <p v-else-if="subscriptionError">
+                        <p v-else-if="subscriptionError" class="text-destructive">
                             {{ subscriptionError }}
                         </p>
-                        <p v-else-if="!subscription">
-                            You don't have an active subscription yet.
-                        </p>
+                        <div v-else-if="!subscription" class="space-y-3">
+                            <p>You don't have an active subscription yet.</p>
+                            <p class="text-xs">
+                                Browse available plans and start your TeleMed Pro subscription to access our services.
+                            </p>
+                        </div>
                         <div v-else class="space-y-1">
                             <p>
                                 <span class="font-medium text-foreground">
@@ -1185,109 +1209,124 @@ onMounted(() => {
                             <p v-if="cancelSubscriptionError" class="text-xs text-destructive">
                                 {{ cancelSubscriptionError }}
                             </p>
+                            <p v-if="renewSubscriptionError" class="text-xs text-destructive">
+                                {{ renewSubscriptionError }}
+                            </p>
                         </div>
                     </CardContent>
-                    <CardFooter v-if="subscription" class="flex gap-2">
-                        <Button
-                            v-if="subscription.status === 'active' || subscription.status === 'cancelled'"
-                            type="button"
-                            size="sm"
-                            variant="default"
-                            :disabled="renewingSubscription"
-                            @click="renewSubscription"
-                        >
-                            <Spinner
-                                v-if="renewingSubscription"
-                                class="mr-2 h-4 w-4"
-                            />
-                            <span v-if="renewingSubscription">
-                                Renewing…
-                            </span>
-                            <span v-else>
-                                Renew subscription
-                            </span>
-                        </Button>
-                        <Dialog v-if="canCancelSubscription">
-                            <DialogTrigger as-child>
-                                <Button
-                                    type="button"
-                                    size="sm"
-                                    variant="outline"
-                                    :disabled="cancellingSubscription"
-                                >
-                                    <Spinner
-                                        v-if="cancellingSubscription"
-                                        class="mr-2 h-4 w-4"
-                                    />
-                                    <span v-if="cancellingSubscription">
-                                        Cancelling…
-                                    </span>
-                                    <span v-else>
-                                        Cancel subscription
-                                    </span>
-                                </Button>
-                            </DialogTrigger>
-                            <DialogContent>
-                                <DialogHeader>
-                                    <DialogTitle>Cancel subscription</DialogTitle>
-                                    <DialogDescription>
-                                        You are about to cancel your subscription. Please review the details below.
-                                    </DialogDescription>
-                                </DialogHeader>
-                                <div class="space-y-4 py-4">
-                                    <div class="space-y-2 rounded-lg bg-muted p-3">
-                                        <div class="flex justify-between text-sm">
-                                            <span class="text-muted-foreground">Plan:</span>
-                                            <span class="font-medium">{{ subscription.plan_name || 'TeleMed Pro plan' }}</span>
+                    <CardFooter v-if="!loadingSubscription && !subscriptionError" class="flex gap-2">
+                        <template v-if="subscription">
+                            <Button
+                                v-if="subscription.status === 'active' || subscription.status === 'cancelled'"
+                                type="button"
+                                size="sm"
+                                variant="default"
+                                :disabled="renewingSubscription"
+                                @click="renewSubscription"
+                            >
+                                <Spinner
+                                    v-if="renewingSubscription"
+                                    class="mr-2 h-4 w-4"
+                                />
+                                <span v-if="renewingSubscription">
+                                    Renewing…
+                                </span>
+                                <span v-else>
+                                    Renew subscription
+                                </span>
+                            </Button>
+                            <Dialog v-if="canCancelSubscription">
+                                <DialogTrigger as-child>
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="outline"
+                                        :disabled="cancellingSubscription"
+                                    >
+                                        <Spinner
+                                            v-if="cancellingSubscription"
+                                            class="mr-2 h-4 w-4"
+                                        />
+                                        <span v-if="cancellingSubscription">
+                                            Cancelling…
+                                        </span>
+                                        <span v-else>
+                                            Cancel subscription
+                                        </span>
+                                    </Button>
+                                </DialogTrigger>
+                                <DialogContent>
+                                    <DialogHeader>
+                                        <DialogTitle>Cancel subscription</DialogTitle>
+                                        <DialogDescription>
+                                            You are about to cancel your subscription. Please review the details below.
+                                        </DialogDescription>
+                                    </DialogHeader>
+                                    <div class="space-y-4 py-4">
+                                        <div class="space-y-2 rounded-lg bg-muted p-3">
+                                            <div class="flex justify-between text-sm">
+                                                <span class="text-muted-foreground">Plan:</span>
+                                                <span class="font-medium">{{ subscription.plan_name || 'TeleMed Pro plan' }}</span>
+                                            </div>
+                                            <div class="flex justify-between text-sm">
+                                                <span class="text-muted-foreground">Current status:</span>
+                                                <span class="font-medium capitalize">{{ subscription.status.replace('_', ' ') }}</span>
+                                            </div>
+                                            <div v-if="subscription.ends_at" class="flex justify-between text-sm">
+                                                <span class="text-muted-foreground">Access until:</span>
+                                                <span class="font-medium">{{ formatActivityTimestamp(subscription.ends_at) }}</span>
+                                            </div>
+                                            <div v-if="subscription.is_trial" class="flex justify-between text-sm">
+                                                <span class="text-muted-foreground">Trial status:</span>
+                                                <span class="font-medium">Active trial</span>
+                                            </div>
                                         </div>
-                                        <div class="flex justify-between text-sm">
-                                            <span class="text-muted-foreground">Current status:</span>
-                                            <span class="font-medium capitalize">{{ subscription.status.replace('_', ' ') }}</span>
-                                        </div>
-                                        <div v-if="subscription.ends_at" class="flex justify-between text-sm">
-                                            <span class="text-muted-foreground">Access until:</span>
-                                            <span class="font-medium">{{ formatActivityTimestamp(subscription.ends_at) }}</span>
-                                        </div>
-                                        <div v-if="subscription.is_trial" class="flex justify-between text-sm">
-                                            <span class="text-muted-foreground">Trial status:</span>
-                                            <span class="font-medium">Active trial</span>
-                                        </div>
+                                        <p class="text-sm text-muted-foreground">
+                                            Cancelling will end your subscription at the end of your current billing period. You will lose access to TeleMed Pro services after that date.
+                                        </p>
                                     </div>
-                                    <p class="text-sm text-muted-foreground">
-                                        Cancelling will end your subscription at the end of your current billing period. You will lose access to TeleMed Pro services after that date.
-                                    </p>
-                                </div>
-                                <DialogFooter>
-                                    <DialogClose as-child>
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                        >
-                                            Keep subscription
-                                        </Button>
-                                    </DialogClose>
-                                    <DialogClose as-child>
-                                        <Button
-                                            type="button"
-                                            variant="destructive"
-                                            :disabled="cancellingSubscription"
-                                            @click="cancelSubscription"
-                                        >
-                                            <Spinner
-                                                v-if="cancellingSubscription"
-                                                class="mr-2 h-4 w-4"
-                                            />
-                                            <span v-if="cancellingSubscription">
-                                                Cancelling…
-                                            </span>
-                                            <span v-else>
-                                                Confirm cancel
-                                            </span>
-                                        </Button>
-                                    </DialogClose>
-                                </DialogFooter>
-                            </DialogContent>
-                        </Dialog>
+                                    <DialogFooter>
+                                        <DialogClose as-child>
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                            >
+                                                Keep subscription
+                                            </Button>
+                                        </DialogClose>
+                                        <DialogClose as-child>
+                                            <Button
+                                                type="button"
+                                                variant="destructive"
+                                                :disabled="cancellingSubscription"
+                                                @click="cancelSubscription"
+                                            >
+                                                <Spinner
+                                                    v-if="cancellingSubscription"
+                                                    class="mr-2 h-4 w-4"
+                                                />
+                                                <span v-if="cancellingSubscription">
+                                                    Cancelling…
+                                                </span>
+                                                <span v-else>
+                                                    Confirm cancel
+                                                </span>
+                                            </Button>
+                                        </DialogClose>
+                                    </DialogFooter>
+                                </DialogContent>
+                            </Dialog>
+                        </template>
+                        <template v-else>
+                            <Button
+                                type="button"
+                                size="sm"
+                                variant="default"
+                                @click="$inertia.visit('/plans')"
+                            >
+                                Browse plans
+                            </Button>
+                        </template>
                     </CardFooter>
                 </Card>
 

@@ -53,6 +53,14 @@ Route::get('dashboard', function () {
     return Inertia::render('Dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
+Route::get('plans', function () {
+    return Inertia::render('Plans');
+})->middleware(['auth', 'verified'])->name('plans.index');
+
+Route::get('checkout', function () {
+    return Inertia::render('Checkout');
+})->middleware(['auth', 'verified'])->name('checkout.index');
+
 // Signup routes - PUBLIC (no auth required)
 Route::get('signup', function () {
     return Inertia::render('Signup');
@@ -121,6 +129,9 @@ Route::middleware('auth')->group(function () {
 
     Route::post('patient/subscription/cancel', [PatientSubscriptionController::class, 'cancel'])
         ->name('patient.subscription.cancel');
+
+    Route::post('patient/subscription', [PatientSubscriptionController::class, 'create'])
+        ->name('patient.subscription.create');
 
     Route::post('patient/subscription/renew', [PatientSubscriptionController::class, 'renew'])
         ->middleware('rate.limit.subscription.renewal')
